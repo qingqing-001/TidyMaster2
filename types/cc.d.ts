@@ -11,7 +11,7 @@ declare module 'cc' {
   // // _decorator
   export const _decorator: {
     ccclass: (name: string) => ClassDecorator;
-    property: (type?: Function) => PropertyDecorator;
+    property: any;
     executeInEditMode: ClassDecorator;
     menu: ClassDecorator;
     help: ClassDecorator;
@@ -22,7 +22,10 @@ declare module 'cc' {
 
   // 装饰器
   export const ccclass: (name: string) => ClassDecorator;
-  export const property: (type?: Function) => PropertyDecorator;
+
+  // property装饰器 - 支持多种调用方式
+  export const property: any;
+
   export const executeInEditMode: ClassDecorator;
   export const menu: ClassDecorator;
   export const help: ClassDecorator;
@@ -353,6 +356,62 @@ declare module 'cc' {
     stop(): void;
     pause(): void;
     resume(): void;
+  }
+
+  // ParticleSystem 粒子系统
+  export class ParticleSystem extends Component {
+    // 发射相关
+    duration: number;
+    emissionRate: number;
+    emissionRateVar: number;
+    totalParticles: number;
+
+    // 生命周期
+    life: number;
+    lifeVar: number;
+
+    // 颜色
+    startColor: Color;
+    startColorVar: Color;
+    endColor: Color;
+    endColorVar: Color;
+
+    // 大小
+    startSize: number;
+    startSizeVar: number;
+    endSize: number;
+    endSizeVar: number;
+
+    // 速度
+    startSpeed: number;
+    startSpeedVar: number;
+    endSpeed: number;
+    endSpeedVar: number;
+
+    // 重力
+    gravity: Vec3;
+    gravityVar: Vec3;
+
+    // 旋转
+    startRotation: number;
+    startRotationVar: number;
+    endRotation: number;
+    endRotationVar: number;
+
+    // 位置
+    positionType: number;
+    posVar: Vec3;
+
+    // 旋转
+    rotatePerSecond: number;
+    rotatePerSecondVar: number;
+
+    // 方法
+    resetSystem(): void;
+    stopSystem(): void;
+    pauseSystem(): void;
+    resumeSystem(): void;
+    addParticle(): void;
   }
 
   export class RigidBody2D extends Component {

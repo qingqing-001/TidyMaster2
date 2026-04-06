@@ -57,7 +57,7 @@ export interface ShareInfo {
 
 export function shareAppMessage(shareInfo: ShareInfo): void {
     if (isWx()) {
-        wx.shareAppMessage({
+        (wx as any).shareAppMessage({
             title: shareInfo.title,
             imageUrl: shareInfo.imageUrl,
             query: shareInfo.query
@@ -70,7 +70,7 @@ export function shareAppMessage(shareInfo: ShareInfo): void {
  */
 export function postScore(key: string, value: number): void {
     if (isWx()) {
-        const openDataContext = wx.getOpenDataContext();
+        const openDataContext = (wx as any).getOpenDataContext();
         openDataContext.postMessage({
             type: 'UPDATE_SCORE',
             key,
@@ -112,7 +112,7 @@ export function getGroupEnterInfo(): Promise<GroupInfo> {
     return new Promise((resolve, reject) => {
         if (isWx()) {
             wx.getGroupEnterInfo({
-                success: resolve,
+                success: (res: any) => resolve(res as GroupInfo),
                 fail: reject
             });
         } else {
@@ -156,7 +156,7 @@ export function vibrateLong(): void {
 
 export function vibrateShort(): void {
     if (isWx()) {
-        wx.vibrateShort();
+        (wx as any).vibrateShort();
     }
 }
 

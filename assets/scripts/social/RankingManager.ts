@@ -5,7 +5,7 @@ const { ccclass } = _decorator;
  * 排行榜管理器
  * 使用微信开放域实现好友排行榜
  */
-@cccclass('RankingManager')
+@ccclass('RankingManager')
 export class RankingManager extends Component {
     private static _instance: RankingManager;
 

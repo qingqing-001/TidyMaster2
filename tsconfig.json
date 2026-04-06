@@ -16,7 +16,7 @@
     "paths": {
       "@/*": ["./assets/scripts/*"]
     },
-    "types": ["cc", "cc.env"]
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": ["./assets/scripts/**/*"],
   "exclude": ["node_modules", "temp", "build"]
