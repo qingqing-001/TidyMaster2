@@ -1,36 +1,42 @@
 # Athena 工作记录
 
-## 2026-04-06 - Cycle 评估
+## 当前状态评估
 
-### 项目状态分析
+### 已确认事实
+1. **M2 已拆分**：M2.1（首个可玩拖拽关卡闭环）和 M2.2（反馈与稳定性打磨）
+2. **TypeScript 编译通过**：`npx tsc --noEmit` 无错误
+3. **代码层面的拖拽闭环已实现**：
+   - GameScene.loadTutorialLevel() 加载物品和槽位配置
+   - DragHandler 拖拽 + 匹配 + 归位
+   - LevelManager.markItemPlaced() 记录状态
+   - handleItemPlaced() 检测完成并触发 LEVEL_COMPLETE
 
-**已完成 (M1.1 ✅)**:
-- 项目目录结构完整（14个子目录）
-- TypeScript配置（strict模式）
-- Cocos Creator项目配置
-- 微信小游戏配置
-- 核心管理器框架（GameManager, EventManager, DataManager, AudioManager）
-- 基础组件（DragHandler, LevelManager等）
-- 场景框架（5个场景文件）
-- 总计49个TypeScript文件
+### 代码验证
 
-### 当前问题
+检查 GameScene.ts:
+- ✅ 物品和槽位从配置实例化（58-96行）
+- ✅ 进度更新（177-185行）
+- ✅ 关卡完成判定（169-171行）
+- ✅ 事件触发（202-210行）
 
-1. **配置数据缺失**: 缺少levels.ts, 完整的constants.ts
-2. **平台适配器未实现**: PlatformAdapter, WxAdapter只有声明没有实现
-3. **未验证构建**: 未测试TypeScript编译和微信小游戏构建
-4. **缺少测试**: 没有M1的验收测试
+### 仍存在的问题（P0 阻断项）
 
-### 决策
+1. **TimerController 空实现**：倒计时逻辑未实现，LEVEL_FAILED 事件无法触发
+2. **ResultScene 未监听事件**：LEVEL_COMPLETE/LEVEL_FAILED 发出后无响应
+3. **需编辑器配置**：需要 Prefab 和场景配置才能真正运行
 
-将M1拆分为M1.1（已完成）和M1.2（进行中）：
-- M1.1: 项目框架和配置 ✅
-- M1.2: 配置数据和构建验证 → 交给Ares团队
+## 决策
 
-### 下一步
+代码层面的 M2.1 技术实现已完成，但：
+- 存在阻塞功能（TimerController）
+- 缺少结果场景对接
+- 需要验证 Cocos Creator 编辑器中的配置
 
-定义M1.2里程碑，包含：
-1. 完成游戏配置数据
-2. 实现平台适配器
-3. 验证编译和构建
-4. 编写M1验收测试
+建议下发新的里程碑，聚焦在：
+1. 完成 TimerController 完整倒计时功能
+2. ResultScene 事件监听集成
+3. 验证编辑器中的 Prefab 配置
+
+## 下一步
+
+指派评估后，输出里程碑给 Ares。
