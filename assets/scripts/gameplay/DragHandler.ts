@@ -42,6 +42,11 @@ export class DragHandler extends Component {
       return;
     }
 
+    // 检查物品是否已经放置，如果是则从原槽位移除
+    if (this.itemController && this.itemController.getState() === ItemState.PLACED) {
+      this.removeFromCurrentSlot();
+    }
+
     this.isDragging = true;
     this.originalPosition = v3(this.node.position.x, this.node.position.y, this.node.position.z);
 
@@ -59,6 +64,41 @@ export class DragHandler extends Component {
     }
 
     this.eventManager.emit(GAME_EVENTS.ITEM_DRAG_START, this.node.name);
+  }
+
+  /**
+   * 从当前槽位移除物品（处理重新拖拽已放置物品的情况）
+   */
+  private removeFromCurrentSlot(): void {
+    if (!this.itemController) {
+      return;
+    }
+
+    const itemId = this.itemController.itemId;
+    if (!itemId) {
+      return;
+    }
+
+    const scene = director.getScene();
+    if (!scene) {
+      return;
+    }
+
+    const slots = scene.getComponentsInChildren(SlotController) as SlotController[];
+    for (const slot of slots) {
+      if (slot.getItems().includes(itemId)) {
+        const slotId = slot.slotId;
+        slot.removeItem(itemId);
+        console.log(`[DragHandler] 从槽位 ${slotId} 移除物品 ${itemId}`);
+
+        // 发送物品移除事件，以便 LevelManager 更新进度
+        this.eventManager.emit(GAME_EVENTS.ITEM_REMOVED, {
+          itemId: itemId,
+          slotId: slotId
+        });
+        break;
+      }
+    }
   }
 
   private onTouchMove(event: EventTouch): void {

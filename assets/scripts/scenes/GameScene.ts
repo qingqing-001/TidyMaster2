@@ -53,10 +53,12 @@ export class GameScene extends Component {
 
     private registerEvents(): void {
         this.eventManager.on(GAME_EVENTS.ITEM_PLACED, this.handleItemPlaced as any);
+        this.eventManager.on(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
     }
 
     private unregisterEvents(): void {
         this.eventManager.off(GAME_EVENTS.ITEM_PLACED, this.handleItemPlaced as any);
+        this.eventManager.off(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
     }
 
     /**
@@ -192,6 +194,15 @@ export class GameScene extends Component {
         if (this.levelManager.isLevelComplete()) {
             this.onLevelComplete(3);
         }
+    }
+
+    /**
+     * 处理物品从槽位移除事件（玩家重新拖拽已放置物品）
+     */
+    private handleItemRemoved(data: { itemId: string; slotId: string }): void {
+        // 物品被移除时，需要从已放置列表中移除
+        this.levelManager.removeItem(data.itemId);
+        this.updateProgressDisplay();
     }
 
     /**

@@ -36,6 +36,13 @@ export class LevelManager {
     this.placedItems.add(itemId);
   }
 
+  /**
+   * 移除已放置的物品（玩家重新拖拽已放置物品时调用）
+   */
+  public removeItem(itemId: string): void {
+    this.placedItems.delete(itemId);
+  }
+
   public getPlacedCount(): number {
     return this.placedItems.size;
   }

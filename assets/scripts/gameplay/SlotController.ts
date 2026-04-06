@@ -111,6 +111,11 @@ export class SlotController extends Component {
   }
 
   public addItem(itemId: string): boolean {
+    // 检查重复添加
+    if (this.itemIds.includes(itemId)) {
+      return false;
+    }
+
     if (this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY) {
       return false;
     }
