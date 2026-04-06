@@ -452,7 +452,7 @@ export const LEVEL_1_5: LevelDataConfig = {
     ],
     slots: [
         {
-            id: 'slot_sh_shelf_1',
+            id: 'slot_shelf_1',
             pos: { x: 120, y: 100 },
             acceptTypes: [BOOK],
             size: { w: 70, h: 90 },
