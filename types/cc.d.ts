@@ -98,6 +98,8 @@ declare module 'cc' {
     };
 
     getParent(): Node | null;
+    setPosition(x: number | Vec3, y?: number, z?: number): void;
+    setScale(x: number | Vec3, y?: number, z?: number): void;
     getChildByName(name: string): Node | null;
     getChildByPath(path: string): Node | null;
     addChild(child: Node): void;
@@ -212,6 +214,8 @@ declare module 'cc' {
   export class Scene {
     name: string;
     readonly uuid: string;
+    getComponentInChildren<T extends Component>(type: Function): T | null;
+    getComponentsInChildren<T extends Component>(type: Function): T[];
   }
 
   // resources 模块
@@ -298,6 +302,20 @@ declare module 'cc' {
   export function v2(x?: number, y?: number): Vec2;
   export function color(r?: number, g?: number, b?: number, a?: number) : Color;
   export function size(width?: number, height?: number): Size;
+
+  // 实例化函数
+  export function instantiate(original: Node): Node;
+
+  // Vec3 静态方法
+  export class Vec3 {
+    x: number;
+    y: number;
+    z: number;
+    static distance(a: Vec3, b: Vec3): number;
+    static subtract(out: Vec3, a: Vec3, b: Vec3): Vec3;
+    static add(out: Vec3, a: Vec3, b: Vec3): Vec3;
+    clone(): Vec3;
+  }
 
   // 键盘事件
   export class KeyCode {

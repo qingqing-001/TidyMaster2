@@ -1,3 +1,5 @@
+import { GAME_CONFIG } from '../../data/constants';
+
 export class AudioManager {
   private static instance: AudioManager | null = null;
   private enabled = true;
@@ -24,5 +26,17 @@ export class AudioManager {
     }
 
     // placeholder: bind AudioSource/clip in editor later
+  }
+
+  public playSFX(soundName: string): void {
+    if (!this.enabled) {
+      return;
+    }
+
+    // placeholder: play sound effect based on soundName
+    // Will be integrated with actual audio assets later
+    if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+      console.log(`[AudioManager] Playing SFX: ${soundName}`);
+    }
   }
 }
