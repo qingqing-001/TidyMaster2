@@ -5,6 +5,7 @@ import { GAME_EVENTS, GAME_CONFIG } from '../../data/constants';
 import { ItemController } from '../gameplay/ItemController';
 import { DragHandler } from '../gameplay/DragHandler';
 import { SlotController } from '../gameplay/SlotController';
+import { TimerController } from '../gameplay/TimerController';
 import { AudioManager } from '../audio/AudioManager';
 import { ParticleEffects } from '../effects/ParticleEffects';
 
@@ -30,6 +31,12 @@ export class GameScene extends Component {
 
     @property({ type: Label, tooltip: '进度显示标签' })
     private progressLabel: Label | null = null;
+
+    @property({ type: TimerController, tooltip: '计时器控制器' })
+    private timerController: TimerController | null = null;
+
+    @property({ type: Label, tooltip: '时间显示标签' })
+    private timeLabel: Label | null = null;
 
     private levelManager = new LevelManager();
     private eventManager = EventManager.getInstance();
@@ -76,6 +83,22 @@ export class GameScene extends Component {
         this.levelManager.loadLevel(tutorialLevel);
         this.instantiateLevelObjects(tutorialLevel);
         this.updateProgressDisplay();
+
+        // 启动计时器
+        const timeLimit = tutorialLevel.timeLimit || 60; // 默认60秒
+        if (this.timerController) {
+            // 如果有独立的 TimerController 组件，使用它
+            this.timerController.startTimer(timeLimit);
+        } else if (this.timeLabel) {
+            // 尝试从子节点获取 TimerController
+            const timerNode = this.node.getChildByName('Timer');
+            if (timerNode) {
+                const timer = timerNode.getComponent(TimerController);
+                if (timer) {
+                    timer.startTimer(timeLimit);
+                }
+            }
+        }
 
         this.eventManager.emit(GAME_EVENTS.LEVEL_LOADED, tutorialLevel);
     }
@@ -200,6 +223,11 @@ export class GameScene extends Component {
      * 关卡完成
      */
     onLevelComplete(stars: number): void {
+        // 停止计时器
+        if (this.timerController) {
+            this.timerController.pauseTimer();
+        }
+        
         this.audioManager.playClick();
         this.eventManager.emit(GAME_EVENTS.LEVEL_COMPLETE, {
             levelId: this.levelManager.getCurrentLevel()?.id,
