@@ -3,9 +3,30 @@
 
 declare module 'cc' {
   // 基础类型
-  export type Vec2 = { x: number, y: number };
-  export type Vec3 = { x: number, y: number, z: number };
-  export type Color = { r: number, g: number, b: number, a: number };
+  export class Vec2 {
+    x: number;
+    y: number;
+    constructor(x?: number, y?: number);
+    clone(): Vec2;
+  }
+  export class Vec3 {
+    x: number;
+    y: number;
+    z: number;
+    constructor(x?: number, y?: number, z?: number);
+    static distance(a: Vec3, b: Vec3): number;
+    static subtract(out: Vec3, a: Vec3, b: Vec3): Vec3;
+    static add(out: Vec3, a: Vec3, b: Vec3): Vec3;
+    clone(): Vec3;
+  }
+  export class Color {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    constructor(r?: number, g?: number, b?: number, a?: number);
+    clone(): Color;
+  }
   export type Size = { width: number, height: number };
 
   // // _decorator
@@ -83,6 +104,8 @@ declare module 'cc' {
     worldPosition: Vec3;
     scale: Vec3;
     rotation: any;
+    layer: number;
+    constructor(name?: string);
 
     static readonly EventType: {
       TOUCH_START: string;
@@ -106,8 +129,10 @@ declare module 'cc' {
     removeChild(child: Node): void;
     removeAllChildren(): void;
     setParent(parent: Node | null, keepWorldTransform?: boolean): void;
-    getComponent<T extends Component>(type: Function): T | null;
-    addComponent<T extends Component>(type: Function): T;
+    getSiblingIndex(): number;
+    setSiblingIndex(index: number): void;
+    getComponent<T extends Component>(type: new (...args: any[]) => T): T | null;
+    addComponent<T extends Component>(type: new (...args: any[]) => T): T;
     destroy(): void;
     isValid: boolean;
 
@@ -125,7 +150,14 @@ declare module 'cc' {
     color: Color;
     sizeMode: number;
     customSize: Size;
-    static readonlySizeMode: any;
+    grayscale: boolean;
+    trim: boolean;
+    type: number;
+    static readonly SizeMode: {
+      CUSTOM: number;
+      RAW: number;
+      TRIMMED: number;
+    };
   }
 
   // SpriteFrame 资源
@@ -306,17 +338,6 @@ declare module 'cc' {
   // 实例化函数
   export function instantiate(original: Node): Node;
 
-  // Vec3 静态方法
-  export class Vec3 {
-    x: number;
-    y: number;
-    z: number;
-    static distance(a: Vec3, b: Vec3): number;
-    static subtract(out: Vec3, a: Vec3, b: Vec3): Vec3;
-    static add(out: Vec3, a: Vec3, b: Vec3): Vec3;
-    clone(): Vec3;
-  }
-
   // 键盘事件
   export class KeyCode {
     static readonly KEY_UP: number;
@@ -337,6 +358,17 @@ declare module 'cc' {
     anchorX: number;
     anchorY: number;
     priority: number;
+    setContentSize(size: Size): void;
+  }
+
+  export class UIOpacity extends Component {
+    opacity: number;
+  }
+
+  export namespace Layers {
+    const Enum: {
+      UI_2D: number;
+    };
   }
 
   export class Layout extends Component {

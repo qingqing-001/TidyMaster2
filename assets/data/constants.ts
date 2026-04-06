@@ -3,6 +3,9 @@ export const GAME_EVENTS = {
   LEVEL_LOADED: 'level:loaded',
   ITEM_DRAG_START: 'item:drag-start',
   ITEM_DRAG_END: 'item:drag-end',
+  ITEM_PLACED: 'item:placed',
+  LEVEL_COMPLETE: 'level:complete',
+  LEVEL_FAILED: 'level:failed',
   AUDIO_TOGGLE: 'audio:toggle',
 } as const;
 

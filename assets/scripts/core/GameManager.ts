@@ -28,7 +28,10 @@ export class GameManager {
     this.audioManager.setEnabled(progress.soundEnabled);
     this.levelManager.loadLevel({
       id: progress.currentLevelId || GAME_CONFIG.DEFAULT_LEVEL_ID,
-      targetItems: 3,
+      name: 'Default Level',
+      items: [],
+      slots: [],
+      requiredItems: 3,
     });
     this.eventManager.emit(GAME_EVENTS.GAME_INIT, {
       platform: this.platformAdapter.isWechat() ? 'wechat' : 'default',
