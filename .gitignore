@@ -1,0 +1,36 @@
+# Cocos Creator
+temp/
+local/
+build/
+profiles/
+library/
+
+# TypeScript
+*.tsbuildinfo
+
+# Node
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# 微信小游戏
+weapp/build/
+weapp/temp/
+
+# 本地配置
+*.local.*
+
+# 临时文件
+.tmp/

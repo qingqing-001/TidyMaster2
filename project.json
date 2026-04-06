@@ -1,0 +1,13 @@
+{
+  "version": "3.8.6",
+  "name": "tidy-master",
+  "uuid": "tidy-master-uuid",
+  "type": "3d",
+  "editor": "creator",
+  "dependencies": {
+    "cc": "3.8.6"
+  },
+  "scripts": {
+    "build": "cocos compile"
+  }
+}

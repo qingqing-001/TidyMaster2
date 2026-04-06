@@ -1,0 +1,14 @@
+{
+  "name": "tidy-master",
+  "version": "1.0.0",
+  "description": "TidyMaster - 微信小游戏收纳整理游戏",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0"
+  }
+}
