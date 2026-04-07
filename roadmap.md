@@ -142,7 +142,7 @@
 - TypeScript编译通过 ✅
 
 ### M5: 首个完整关卡测试
-**状态**：进行中（已添加.scene文件基础框架）
+**状态**：代码已完成 ⚠️ 阻塞于编辑器配置
 **预算周期**：3个周期
 **描述**：
 - 完成第1章5个教学关卡的完整配置
@@ -158,9 +158,23 @@
 - 有音效+动画反馈
 - 主包大小符合要求
 
+**代码完成状态** ✅：
+- 所有场景脚本已完成（LaunchScene, HomeScene, GameScene, ResultScene）
+- LevelManager、TimerController、ScoreCalculator 已实现
+- 5个教学关卡配置完成
+- 新手引导系统已实现
+- TypeScript 编译通过
+
+**阻塞原因** ⚠️：
+- .scene 文件只有 Canvas 节点，未挂载脚本组件
+- 需要 Cocos Creator 编辑器完成以下操作：
+  1. 导入 assets/scripts 目录下的 TypeScript 文件
+  2. 给每个场景的 Canvas 节点挂载对应脚本组件
+  3. 配置启动场景为 Launch
+  4. 执行构建发布
+
 **更新**：
-- 2024-04-07: 添加了基础.scene文件（Launch, Home, Game, Result, MyRoom）
-- 需要在Cocos Creator编辑器中配置场景脚本组件
+- 2024-04-07: 代码层面全部完成，阻塞于编辑器配置
 
 ---
 
