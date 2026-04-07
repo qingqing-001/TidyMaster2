@@ -1,43 +1,33 @@
-# Bob 工作笔记 - Issue #29 & #30
+# Bob 工作笔记 - Issue #34
 
 ## 当前任务
 
-### Issue #29: 完成BeforeAfterCompare组件 ✅ 已完成
-- 实现setImages方法加载图片
-- 实现generateCompareImage生成对比图
+### Issue #34: M5 - 实现新手引导系统（前3关）
 
-### Issue #30: 完成StarRating组件 ✅ 已完成
-- 实现setStars方法更新UI星星数量
-- 实现星星播放动画
+**目标**: 为前3关（LEVEL_1_1, LEVEL_1_2, LEVEL_1_3）实现新手引导系统
 
-## 完成状态
+**要求**:
+1. 第1关：显示拖拽提示箭头，高亮物品
+2. 第2关：显示目标槽位提示
+3. 第3关：显示操作类型提示（拖拽/擦洗）
+4. 引导系统应该在玩家首次进入关卡时自动触发
 
-✅ 已完成
+**关键文件**:
+- `assets/scripts/scenes/GameScene.ts` - 游戏场景
+- `assets/scripts/ui/` - UI组件目录
+- `assets/scripts/gameplay/DragHandler.ts` - 拖拽处理器
+- `assets/scripts/data/levels.ts` - 关卡配置
 
-## 实现内容
+## 执行步骤
 
-### BeforeAfterCompare组件
-- 添加compareImage和sliderHandle属性用于对比滑动
-- setImages(beforeUrl, afterUrl): 使用resources.load加载前后对比图片
-- generateCompareImage(beforeData, afterData): 生成对比图并播放动画
-- playCompareAnimation: 滑块从左到右移动动画
-- setProgress/progress: 设置和获取滑动进度
-- reset: 重置对比图状态
+1. 创建新手引导组件 `TutorialGuide.ts`
+2. 在GameScene中集成引导系统
+3. 实现第1关的拖拽提示
+4. 实现第2关的槽位提示
+5. 实现第3关的操作提示
+6. 验证TypeScript编译通过
+7. 在Note中记录完成状态
 
-### StarRating组件
-- 添加emptyStarFrame/filledStarFrame属性支持不同精灵
-- setStars(count, animate): 设置星星数量，可选动画
-- playStarAnimation: 星星逐个点亮的缩放弹性动画
-- playResetAnimation: 星星逐个消失动画
-- addStar/removeStar: 动态增减星星
-- 设置未点亮/点亮颜色支持
+## 状态
 
-## 关键文件
-
-- `assets/scripts/ui/BeforeAfterCompare.ts`
-- `assets/scripts/ui/StarRating.ts`
-- Cocos Creator API: resources.load, tween, Sprite
-
-## TypeScript编译检查
-
-✅ 通过编译检查
+待开始...
