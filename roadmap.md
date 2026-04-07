@@ -111,22 +111,31 @@
 - 评分计算正确（1-3星）
 - 关卡完成判定准确
 
-### M4: 游戏场景和UI实现
-**状态**：进行中
-**预算周期**：5个周期
+### M4.1: 游戏场景实现
+**状态**：已完成 ✅
+**预算周期**：3个周期
 **描述**：
 - 创建LaunchScene（启动/Loading场景）
 - 创建HomeScene（主页场景）
 - 创建GameScene（游戏关卡场景）
 - 创建ResultScene（结算场景）
-- 实现BeforeAfterCompare（整理前后对比组件）
-- 实现StarRating（星级评价组件）
-- 实现场景切换逻辑
 
 **验收标准**：
-- 所有场景文件创建完成
+- 所有场景文件创建完成 ✅
+
+### M4.2: 场景切换和UI组件
+**状态**：进行中
+**预算周期**：3个周期
+**描述**：
+- 实现场景切换逻辑（监听CHANGE_SCENE事件，调用cc.director.loadScene）
+- 完成BeforeAfterCompare组件（setImages, generateCompareImage方法）
+- 完成StarRating组件（setStars方法，星星动画）
+- 修复常量文件命名不一致问题
+
+**验收标准**：
 - 场景切换流畅（淡入淡出）
-- 结算界面显示星级和before/after对比
+- 结算界面显示星级
+- 结算界面显示before/after对比
 - 主界面能选择关卡
 
 ### M5: 首个完整关卡测试
