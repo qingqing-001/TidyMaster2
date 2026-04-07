@@ -303,6 +303,9 @@ export const GAME_EVENTS = {
     ACHIEVEMENT_UNLOCKED: 'achievement-unlocked',
     COLLECTION_UPDATE: 'collection-update',
     CHAPTER_UNLOCKED: 'chapter-unlocked',
+    CHANGE_SCENE: 'change-scene',
+    OPEN_MERGE_PANEL: 'open-merge-panel',
+    GAME_INIT: 'game-init',
 } as const;
 
 // UI 配置
