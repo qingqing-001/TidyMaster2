@@ -61,7 +61,7 @@ export class GameManager extends Component {
     const progress = this.dataManager.getProgress();
     this.audioManager.setEnabled(progress.soundEnabled);
     this.levelManager.loadLevel({
-      id: progress.currentLevelId || 1,
+      id: progress.currentLevelId || '1',
       name: 'Default Level',
       items: [],
       slots: [],
@@ -76,8 +76,10 @@ export class GameManager extends Component {
   /**
    * 场景切换处理
    */
-  private onChangeScene(sceneName: string): void {
-    this.loadScene(sceneName);
+  private onChangeScene(sceneName?: string): void {
+    if (sceneName) {
+      this.loadScene(sceneName);
+    }
   }
 
   /**
@@ -86,7 +88,7 @@ export class GameManager extends Component {
    */
   public loadScene(sceneName: string): void {
     // 播放切换音效
-    this.audioManager.playSfx('ui_click');
+    this.audioManager.playSFX('ui_click');
 
     // 淡入淡出过渡效果
     this.transitionToScene(sceneName);
@@ -170,7 +172,7 @@ export class GameManager extends Component {
   /**
    * 执行场景加载，加载完成后淡出遮罩
    */
-  private doLoadScene(sceneName: string, overlay: Node | null): void {
+  private doLoadScene(sceneName: string, overlay: Node | null = null): void {
     director.loadScene(sceneName, (err) => {
       if (err) {
         console.error(`Failed to load scene ${sceneName}:`, err);

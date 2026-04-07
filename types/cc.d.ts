@@ -135,6 +135,8 @@ declare module 'cc' {
     addComponent<T extends Component>(type: new (...args: any[]) => T): T;
     destroy(): void;
     isValid: boolean;
+    setAnchorPoint(x: number | Vec2, y?: number): void;
+    getAnchorPoint(): Vec2;
 
     // 事件
     on(type: string, callback: Function, target?: any, useCapture?: boolean): void;
@@ -235,15 +237,51 @@ declare module 'cc' {
     duration: number;
   }
 
+  // SceneAsset 场景资源
+  export class SceneAsset extends Asset {
+    scene: Scene;
+  }
+
+  // Graphics 图形绘制组件
+  export class Graphics extends Component {
+    fillColor: Color;
+    strokeColor: Color;
+    lineWidth: number;
+    lineJoin: number;
+    lineCap: number;
+    miterLimit: number;
+    fillRect(x: number, y: number, w: number, h: number): void;
+    rect(x: number, y: number, w: number, h: number): void;
+    clear(): void;
+    close(): void;
+    moveTo(x: number, y: number): void;
+    lineTo(x: number, y: number): void;
+    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
+    ellipse(cx: number, cy: number, rx: number, ry: number, rotation?: number, startAngle?: number, endAngle?: number, counterclockwise?: boolean): void;
+    roundRect(x: number, y: number, w: number, h: number, r?: number): void;
+    stroke(): void;
+    fill(): void;
+  }
+
+  // view 模块
+  export const view: {
+    getVisibleSize(): Size;
+    getVisibleSizeInPixel(): Size;
+    getDesignResolutionSize(): Size;
+    getDevicePixelRatio(): number;
+    setDesignResolutionSize(width: number, height: number, resolutionPolicy: number): void;
+    setOrientation(orientation: number): void;
+  };
+
   // director 全局单例
   export class director {
     static getScene(): Scene | null;
-    static loadScene(name: string, onLaunched?: Function): void;
+    static loadScene(name: string, onLaunched?: (err: Error | null) => void, onProgress?: (progress: number, total: number, item: any) => void): void;
     static preloadScene(name: string, onLoaded?: Function): void;
   }
 
   // Scene 类
-  export class Scene {
+  export class Scene extends Node {
     name: string;
     readonly uuid: string;
     getComponentInChildren<T extends Component>(type: Function): T | null;

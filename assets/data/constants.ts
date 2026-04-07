@@ -1,13 +1,25 @@
 export const GAME_EVENTS = {
   GAME_INIT: 'game:init',
   LEVEL_LOADED: 'level:loaded',
+  LEVEL_START: 'level-start',
+  LEVEL_COMPLETE: 'level-complete',
+  LEVEL_FAILED: 'level-failed',
   ITEM_DRAG_START: 'item:drag-start',
   ITEM_DRAG_END: 'item:drag-end',
   ITEM_PLACED: 'item:placed',
   ITEM_REMOVED: 'item:removed',
-  LEVEL_COMPLETE: 'level:complete',
-  LEVEL_FAILED: 'level:failed',
+  ITEM_PICKED: 'item:picked',
+  COMBO_TRIGGERED: 'combo-triggered',
+  AD_REWARD_GRANTED: 'ad-reward-granted',
+  SCORE_UPDATED: 'score-updated',
+  TIME_WARNING: 'time-warning',
+  TOOL_UPGRADED: 'tool-upgraded',
+  ACHIEVEMENT_UNLOCKED: 'achievement-unlocked',
+  COLLECTION_UPDATE: 'collection-update',
+  CHAPTER_UNLOCKED: 'chapter-unlocked',
   AUDIO_TOGGLE: 'audio:toggle',
+  CHANGE_SCENE: 'change-scene',
+  OPEN_MERGE_PANEL: 'open-merge-panel',
 } as const;
 
 export const GAME_CONFIG = {
