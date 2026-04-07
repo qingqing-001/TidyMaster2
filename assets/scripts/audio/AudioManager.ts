@@ -1,5 +1,5 @@
 import { AudioClip, resources } from 'cc';
-import { GAME_CONFIG } from '../data/Constants';
+import { GAME_CONFIG } from '../data/constants';
 
 type AudioContextLike = {
   currentTime: number;

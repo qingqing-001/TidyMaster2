@@ -1,203 +1,66 @@
 /**
- * 全局常量定义
+ * 全局游戏常量与配置
  */
 
-// 物品类型枚举
-export const ITEM_TYPES = {
-    // 文具类
-    BOOK: 'book',
-    PEN: 'pen',
-    PENCIL: 'pencil',
-    ERASER: 'eraser',
-    RULER: 'ruler',
-    NOTEBOOK: 'notebook',
+import { ITEM_TYPES, type AudioConfig, type ChapterConfig, type GameConfig, type SceneConfigMap } from './types';
 
-    // 厨具类
-    CUP: 'cup',
-    PLATE: 'plate',
-    BOWL: 'bowl',
-    FORK: 'fork',
-    SPOON: 'spoon',
-    KNIFE: 'knife',
-    BOTTLE: 'bottle',
+export { ITEM_TYPES };
 
-    // 衣物类
-    CLOTH: 'cloth',
-    SHIRT: 'shirt',
-    PANTS: 'pants',
-    SOCK: 'sock',
-    TOWEL: 'towel',
-
-    // 玩具类
-    TOY: 'toy',
-    DOLL: 'doll',
-    BALL: 'ball',
-    CAR: 'car',
-
-    // 其他
-    BAG: 'bag',
-    BOX: 'box',
-    TRASH: 'trash',
-    SPONGE: 'sponge',
-    COUNTER: 'counter',
-} as const;
-
-// 场景配置
-export const SCENE_CONFIG = {
-    DESK: {
-        id: 'desk',
-        name: '书桌',
-        displayName: 'Desk',
-        bgSprite: 'bg_desk',
-        items: [ITEM_TYPES.BOOK, ITEM_TYPES.PEN, ITEM_TYPES.PENCIL],
-        defaultTimeLimit: 0,
-    },
-    KITCHEN: {
-        id: 'kitchen',
-        name: '厨房',
-        displayName: 'Kitchen',
-        bgSprite: 'bg_kitchen',
-        items: [ITEM_TYPES.CUP, ITEM_TYPES.PLATE, ITEM_TYPES.FORK, ITEM_TYPES.SPOON],
-        defaultTimeLimit: 0,
-    },
-    TABLE: {
-        id: 'table',
-        name: '餐桌',
-        displayName: 'Dining Table',
-        bgSprite: 'bg_table',
-        items: [ITEM_TYPES.PLATE, ITEM_TYPES.CUP, ITEM_TYPES.BOTTLE, ITEM_TYPES.TOWEL],
-        defaultTimeLimit: 90,
-    },
-    BEDROOM: {
-        id: 'bedroom',
-        name: '卧室',
-        displayName: 'Bedroom',
-        bgSprite: 'bg_bedroom',
-        items: [ITEM_TYPES.CLOTH, ITEM_TYPES.TOWEL],
-        defaultTimeLimit: 120,
-    },
-    LIVING_ROOM: {
-        id: 'living_room',
-        name: '客厅',
-        displayName: 'Living Room',
-        bgSprite: 'bg_livingroom',
-        items: [ITEM_TYPES.BOOK, ITEM_TYPES.CUP, ITEM_TYPES.TOWEL, ITEM_TYPES.CLOTH],
-        defaultTimeLimit: 150,
-    },
-    CLOSET: {
-        id: 'closet',
-        name: '衣柜',
-        displayName: 'Closet',
-        bgSprite: 'bg_closet',
-        items: [ITEM_TYPES.CLOTH, ITEM_TYPES.SHIRT, ITEM_TYPES.PANTS, ITEM_TYPES.SOCK],
-        defaultTimeLimit: 180,
-    },
-    BATHROOM: {
-        id: 'bathroom',
-        name: '浴室',
-        displayName: 'Bathroom',
-        bgSprite: 'bg_bathroom',
-        items: [ITEM_TYPES.TOWEL, ITEM_TYPES.BOTTLE],
-        defaultTimeLimit: 120,
-    },
-} as const;
-
-// 音频配置
-export const AUDIO_CONFIG = {
-    bgm: {
-        bgm_tutorial: {
-            path: 'audio/bgm/tutorial.mp3',
-            loop: true,
-            volume: 0.6,
-        },
-        bgm_tutorial_boss: {
-            path: 'audio/bgm/tutorial_boss.mp3',
-            loop: true,
-            volume: 0.7,
-        },
-        bgm_chapter1: {
-            path: 'audio/bgm/chapter1.mp3',
-            loop: true,
-            volume: 0.6,
-        },
-        bgm_chapter2: {
-            path: 'audio/bgm/chapter2.mp3',
-            loop: true,
-            volume: 0.6,
-        },
-        bgm_chapter3: {
-            path: 'audio/bgm/chapter3.mp3',
-            loop: true,
-            volume: 0.6,
-        },
-        bgm_boss: {
-            path: 'audio/bgm/boss.mp3',
-            loop: true,
-            volume: 0.8,
-        },
-    },
-    sfx: {
-        sfx_item_pickup: {
-            path: 'audio/sfx/item_pickup.mp3',
-            volume: 0.8,
-        },
-        sfx_item_place: {
-            path: 'audio/sfx/item_place.mp3',
-            volume: 0.8,
-        },
-        sfx_item_wipe: {
-            path: 'audio/sfx/item_wipe.mp3',
-            volume: 0.7,
-        },
-        sfx_item_fold: {
-            path: 'audio/sfx/item_fold.mp3',
-            volume: 0.7,
-        },
-        sfx_success: {
-            path: 'audio/sfx/success.mp3',
-            volume: 0.9,
-        },
-        sfx_star: {
-            path: 'audio/sfx/star.mp3',
-            volume: 0.9,
-        },
-        sfx_combo: {
-            path: 'audio/sfx/combo.mp3',
-            volume: 0.8,
-        },
-        sfx_fail: {
-            path: 'audio/sfx/fail.mp3',
-            volume: 0.8,
-        },
-        sfx_ui_click: {
-            path: 'audio/sfx/ui_click.mp3',
-            volume: 0.6,
-        },
-        sfx_reward: {
-            path: 'audio/sfx/reward.mp3',
-            volume: 0.9,
-        },
-    },
-} as const;
-
-// 游戏配置
-export const GAME_CONFIG = {
-    VERSION: '1.0.0',
-    MAX_LEVEL: 100,
-    FIRST_BOSS_LEVEL: 5,
-    BOSS_INTERVAL: 5,
-    CHAPTER_COUNT: 3,
-    LEVELS_PER_CHAPTER: 5,
+export const GAME_CONFIG: GameConfig = {
+    appName: 'TidyMaster',
+    version: '1.0.0',
     ENABLE_DEBUG_LOG: false,
+    targetFrameRate: 60,
+    designResolution: {
+        width: 750,
+        height: 1334,
+        fitWidth: true,
+        fitHeight: false,
+    },
+    level: {
+        tutorialChapter: 1,
+        totalTutorialLevels: 5,
+        defaultTimeLimit: 90,
+        maxStarsPerLevel: 3,
+        scorePerItem: 20,
+        comboBonusStep: 5,
+    },
+    input: {
+        dragThreshold: 12,
+        wipeSamplingDistance: 18,
+        longPressDurationMs: 350,
+    },
+    save: {
+        playerDataKey: 'tidymaster.player',
+        settingsKey: 'tidymaster.settings',
+        progressKey: 'tidymaster.progress',
+    },
+};
+
+export const GAME_EVENTS = {
+    LEVEL_START: 'level:start',
+    LEVEL_LOADED: 'level:loaded',
+    LEVEL_COMPLETE: 'level:complete',
+    LEVEL_FAIL: 'level:fail',
+    LEVEL_FAILED: 'level:fail',
+    ITEM_PICKUP: 'item:pickup',
+    ITEM_PLACED: 'item:placed',
+    ITEM_REMOVED: 'item:removed',
+    ITEM_WRONG_DROP: 'item:wrong_drop',
+    TIMER_TICK: 'timer:tick',
+    TIMER_COMPLETE: 'timer:complete',
+    SETTINGS_CHANGED: 'settings:changed',
+    CHANGE_SCENE: 'change-scene',
+    OPEN_MERGE_PANEL: 'open-merge-panel',
+    COLLECTION_UPDATE: 'collection-update',
 } as const;
 
-// 章节配置
-export const CHAPTER_CONFIG = {
+export const CHAPTER_CONFIG: Record<number, ChapterConfig> = {
     1: {
         id: 1,
         name: 'chapter1',
         displayName: '第一章：新手教学',
-        levelRange: [1, 5] as [number, number],
+        levelRange: [1, 5],
         bossLevels: [5],
         rewardChapter: 1,
     },
@@ -205,164 +68,119 @@ export const CHAPTER_CONFIG = {
         id: 2,
         name: 'chapter2',
         displayName: '第二章：熟练挑战',
-        levelRange: [201, 205] as [number, number],
+        levelRange: [201, 205],
         bossLevels: [205],
         rewardChapter: 2,
-        unlockRequirement: 10,  // 需要累计10星解锁
+        unlockRequirement: 10,
     },
-    3: {
-        id: 3,
-        name: 'chapter3',
-        displayName: '第三章：大师挑战',
-        levelRange: [11, 15] as [number, number],
-        bossLevels: [15],
-        rewardChapter: 3,
-        unlockRequirement: 25,  // 需要累计25星解锁
+};
+
+export const SCENE_CONFIG: SceneConfigMap = {
+    desk: {
+        id: 'desk',
+        name: 'desk',
+        displayName: '书桌',
+        bgSprite: 'bg_desk',
+        ambientSfxKey: 'paper_rustle',
+        items: [ITEM_TYPES.BOOK, ITEM_TYPES.PEN, ITEM_TYPES.PENCIL, ITEM_TYPES.NOTEBOOK],
+        defaultTimeLimit: 0,
     },
-} as const;
-
-// 操作配置
-export const OPERATION_CONFIG = {
-    DRAG: {
-        name: 'drag',
-        displayName: '拖拽',
-        minDistance: 10,
+    kitchen: {
+        id: 'kitchen',
+        name: 'kitchen',
+        displayName: '厨房',
+        bgSprite: 'bg_kitchen',
+        ambientSfxKey: 'kitchen_ambient',
+        items: [ITEM_TYPES.PLATE, ITEM_TYPES.CUP, ITEM_TYPES.FORK, ITEM_TYPES.SPOON, ITEM_TYPES.BOTTLE, ITEM_TYPES.BOWL],
+        defaultTimeLimit: 90,
     },
-    WIPE: {
-        name: 'wipe',
-        displayName: '擦洗',
-        wipeThreshold: 80,  // 完成擦洗所需的百分比
+    table: {
+        id: 'table',
+        name: 'table',
+        displayName: '餐桌',
+        bgSprite: 'bg_table',
+        ambientSfxKey: 'wipe_loop',
+        items: [ITEM_TYPES.TOWEL, ITEM_TYPES.BOTTLE, ITEM_TYPES.PLATE, ITEM_TYPES.CUP],
+        defaultTimeLimit: 90,
     },
-    FOLD: {
-        name: 'fold',
-        displayName: '折叠',
-        foldSteps: 3,  // 折叠步骤数
+    bedroom: {
+        id: 'bedroom',
+        name: 'bedroom',
+        displayName: '卧室',
+        bgSprite: 'bg_bedroom',
+        ambientSfxKey: 'cloth_rustle',
+        items: [ITEM_TYPES.CLOTH, ITEM_TYPES.TOWEL, ITEM_TYPES.SHIRT, ITEM_TYPES.PANTS],
+        defaultTimeLimit: 120,
     },
-    ROTATE: {
-        name: 'rotate',
-        displayName: '旋转',
-        targetAngle: 90,  // 目标旋转角度
+    living_room: {
+        id: 'living_room',
+        name: 'living_room',
+        displayName: '客厅',
+        bgSprite: 'bg_living_room',
+        ambientSfxKey: 'room_ambient',
+        items: [ITEM_TYPES.BOOK, ITEM_TYPES.CUP, ITEM_TYPES.TOWEL, ITEM_TYPES.CLOTH, ITEM_TYPES.TOY],
+        defaultTimeLimit: 150,
     },
-} as const;
+};
 
-// 广告配置
-export const AD_CONFIG = {
-    COOLDOWN_TIME: 120,        // 广告冷却时间（秒）
-    MAX_CLOSE_COUNT: 3,        // 连续关闭上限
-    NEWBIE_LEVELS: 5,          // 新手保护关卡数
-    MAX_DAILY_VIEW: 8,         // 每日最大观看次数
-    REWARD_COINS: 50,          // 观看广告奖励金币
-    REWARD_TIME: 30,           // 观看广告奖励时间（秒）
-} as const;
-
-// 评分配置
-export const SCORE_CONFIG = {
-    MIN_STARS: 1,
-    MAX_STARS: 3,
-    BASE_SCORE: 100,           // 基础分数
-    TIME_BONUS_FACTOR: 0.5,    // 时间奖励系数
-    COMBO_BONUS_FACTOR: 10,    // 连击奖励系数
-    PERFECTION_BONUS: 50,      // 完美通关奖励
-} as const;
-
-// 连击配置
-export const COMBO_CONFIG = {
-    TIME_WINDOW: 2000,         // 连击时间窗口（毫秒）
-    MAX_COMBO_DISPLAY: 4,      // 最大显示连击数
-    BONUS_MULTIPLIER: [1, 1.2, 1.5, 2.0],  // 连击倍率
-} as const;
-
-// 时间警告配置
-export const TIME_WARNING_CONFIG = {
-    WARNING_THRESHOLD: 30,     // 警告阈值（秒）
-    CRITICAL_THRESHOLD: 10,     // 紧急阈值（秒）
-    WARNING_COLOR: '#FFA500',  // 警告颜色
-    CRITICAL_COLOR: '#FF0000', // 紧急颜色
-} as const;
-
-// 存储键名
-export const STORAGE_KEYS = {
-    PLAYER_DATA: 'tidy_master_player_data',
-    SETTINGS: 'tidy_master_settings',
-    DAILY_DATA: 'tidy_master_daily_data',
-    ACHIEVEMENTS: 'tidy_master_achievements',
-    COLLECTION: 'tidy_master_collection',
-    SEASON_PASS: 'tidy_master_season_pass',
-    LEVEL_PROGRESS: 'tidy_master_level_progress',
-} as const;
-
-// 事件名
-export const GAME_EVENTS = {
-    ITEM_PLACED: 'item-placed',
-    ITEM_PICKED: 'item-picked',
-    ITEM_REMOVED: 'item-removed',
-    LEVEL_COMPLETE: 'level-complete',
-    LEVEL_FAILED: 'level-failed',
-    LEVEL_START: 'level-start',
-    LEVEL_LOADED: 'level-loaded',
-    COMBO_TRIGGERED: 'combo-triggered',
-    AD_REWARD_GRANTED: 'ad-reward-granted',
-    SCORE_UPDATED: 'score-updated',
-    TIME_WARNING: 'time-warning',
-    TOOL_UPGRADED: 'tool-upgraded',
-    ACHIEVEMENT_UNLOCKED: 'achievement-unlocked',
-    COLLECTION_UPDATE: 'collection-update',
-    CHAPTER_UNLOCKED: 'chapter-unlocked',
-    CHANGE_SCENE: 'change-scene',
-    OPEN_MERGE_PANEL: 'open-merge-panel',
-    GAME_INIT: 'game-init',
-} as const;
-
-// UI 配置
-export const UI_CONFIG = {
-    TOOLTIP_DURATION: 2000,    // 提示显示时间（毫秒）
-    ANIMATION_SPEED: 300,      // 动画速度（毫秒）
-    DIALOG_FADE_IN: 200,       // 对话框淡入时间
-    DIALOG_FADE_OUT: 150,      // 对话框淡出时间
-} as const;
-
-// 颜色配置
-export const COLORS = {
-    PRIMARY: '#FFB347',
-    SECONDARY: '#87CEEB',
-    ACCENT: '#FFD700',
-    BACKGROUND: '#FFF8E7',
-    TEXT: '#4A4A4A',
-    SUCCESS: '#7BC67E',
-    WARNING: '#FF6B6B',
-    ERROR: '#E74C3C',
-    INFO: '#3498DB',
-    DARK: '#2C3E50',
-    LIGHT: '#ECF0F1',
-} as const;
-
-// 牙刷难度配置
-export const DIFFICULTY_CONFIG = {
-    EASY: {
-        name: 'easy',
-        displayName: '简单',
-        timeMultiplier: 1.5,
-        scoreMultiplier: 0.8,
+export const AUDIO_CONFIG: AudioConfig = {
+    bgm: {
+        bgm_tutorial: {
+            path: 'audio/bgm/tutorial',
+            loop: true,
+            volume: 0.7,
+        },
+        bgm_tutorial_boss: {
+            path: 'audio/bgm/tutorial_boss',
+            loop: true,
+            volume: 0.75,
+        },
+        bgm_chapter2: {
+            path: 'audio/bgm/chapter2',
+            loop: true,
+            volume: 0.72,
+        },
     },
-    NORMAL: {
-        name: 'normal',
-        displayName: '普通',
-        timeMultiplier: 1.0,
-        scoreMultiplier: 1.0,
+    sfx: {
+        item_pickup: {
+            path: 'audio/sfx/item_pickup',
+            volume: 0.85,
+        },
+        item_place: {
+            path: 'audio/sfx/item_place',
+            volume: 0.9,
+        },
+        wipe_loop: {
+            path: 'audio/sfx/wipe_loop',
+            volume: 0.65,
+        },
+        fold_success: {
+            path: 'audio/sfx/fold_success',
+            volume: 0.88,
+        },
+        star_reward: {
+            path: 'audio/sfx/star_reward',
+            volume: 1,
+        },
+        ui_click: {
+            path: 'audio/sfx/ui_click',
+            volume: 0.75,
+        },
+        kitchen_ambient: {
+            path: 'audio/sfx/kitchen_ambient',
+            volume: 0.4,
+        },
+        room_ambient: {
+            path: 'audio/sfx/room_ambient',
+            volume: 0.35,
+        },
+        paper_rustle: {
+            path: 'audio/sfx/paper_rustle',
+            volume: 0.45,
+        },
+        cloth_rustle: {
+            path: 'audio/sfx/cloth_rustle',
+            volume: 0.45,
+        },
     },
-    HARD: {
-        name: 'hard',
-        displayName: '困难',
-        timeMultiplier: 0.8,
-        scoreMultiplier: 1.3,
-    },
-} as const;
-
-// 奖励配置
-export const REWARD_CONFIG = {
-    COIN_PER_STAR: 20,         // 每星奖励金币
-    COIN_PER_LEVEL: 50,        // 每关基础金币
-    FRAGMENT_PER_LEVEL: 5,     // 每关碎片
-    BOSS_COIN_BONUS: 100,      // BOSS关金币奖励
-    BOSS_FRAGMENT_BONUS: 15,   // BOSS关碎片奖励
-} as const;
+};

@@ -9,7 +9,9 @@ import { OperationType } from './LevelData';
 export const ITEM_TYPES = {
     // 文具类
     BOOK: 'book',
+    BOOKS: 'books',
     PEN: 'pen',
+    PENS: 'pens',
     PENCIL: 'pencil',
     ERASER: 'eraser',
     RULER: 'ruler',
@@ -17,22 +19,28 @@ export const ITEM_TYPES = {
 
     // 厨具类
     CUP: 'cup',
+    CUPS: 'cups',
     PLATE: 'plate',
+    PLATES: 'plates',
     BOWL: 'bowl',
     FORK: 'fork',
     SPOON: 'spoon',
     KNIFE: 'knife',
     BOTTLE: 'bottle',
+    BOTTLES: 'bottles',
 
     // 衣物类
     CLOTH: 'cloth',
+    CLOTHES: 'clothes',
     SHIRT: 'shirt',
     PANTS: 'pants',
     SOCK: 'sock',
     TOWEL: 'towel',
+    TOWELS: 'towels',
 
     // 玩具类
     TOY: 'toy',
+    TOYS: 'toys',
     DOLL: 'doll',
     BALL: 'ball',
     CAR: 'car',
@@ -47,30 +55,85 @@ export const ITEM_TYPES = {
 
 export type ItemType = typeof ITEM_TYPES[keyof typeof ITEM_TYPES];
 
+export interface Vector2Like {
+    x: number;
+    y: number;
+}
+
+export interface SizeLike {
+    w: number;
+    h: number;
+}
+
+export interface RewardConfig {
+    baseCoin: number;
+    toolFragments: number;
+}
+
+export interface BgmTrackConfig {
+    path: string;
+    loop: boolean;
+    volume: number;
+}
+
+export interface SfxTrackConfig {
+    path: string;
+    volume: number;
+}
+
+export interface GameConfig {
+    appName: string;
+    version: string;
+    ENABLE_DEBUG_LOG: boolean;
+    targetFrameRate: number;
+    designResolution: {
+        width: number;
+        height: number;
+        fitWidth: boolean;
+        fitHeight: boolean;
+    };
+    level: {
+        tutorialChapter: number;
+        totalTutorialLevels: number;
+        defaultTimeLimit: number;
+        maxStarsPerLevel: number;
+        scorePerItem: number;
+        comboBonusStep: number;
+    };
+    input: {
+        dragThreshold: number;
+        wipeSamplingDistance: number;
+        longPressDurationMs: number;
+    };
+    save: {
+        playerDataKey: string;
+        settingsKey: string;
+        progressKey: string;
+    };
+}
+
 // 场景配置接口
 export interface SceneConfig {
     id: string;
     name: string;
     displayName: string;
     bgSprite: string;
+    ambientSfxKey?: string;
     items: ItemType[];  // 场景中可出现的物品类型
     defaultTimeLimit: number;
+}
+
+export interface SceneConfigMap {
+    [sceneId: string]: SceneConfig;
 }
 
 // 音频配置接口
 export interface AudioConfig {
     bgm: {
-        [key: string]: {
-            path: string;
-            loop: boolean;
-            volume: number;
-        };
+        [key: string]: BgmTrackConfig;
     };
     sfx: {
-        [key: string]: {
-            path: string;
-            volume: number;
-        };
+        [key: string]: SfxTrackConfig;
     };
 }
 
@@ -87,10 +150,7 @@ export interface LevelDataConfig {
     isBoss: boolean;
     operations: OperationType[];
     bgmKey: string;
-    rewards: {
-        baseCoin: number;
-        toolFragments: number;
-    };
+    rewards: RewardConfig;
 }
 
 // 关卡物品配置
@@ -98,7 +158,7 @@ export interface LevelItemConfig {
     id: string;
     type: ItemType;
     spriteKey: string;
-    initialPos: { x: number; y: number };
+    initialPos: Vector2Like;
     targetSlotId: string;
     operation: OperationType;
     sortOrder: number;
@@ -109,9 +169,9 @@ export interface LevelItemConfig {
 // 关卡目标位置配置
 export interface LevelSlotConfig {
     id: string;
-    pos: { x: number; y: number };
+    pos: Vector2Like;
     acceptTypes: ItemType[];
-    size: { w: number; h: number };
+    size: SizeLike;
     hintSprite?: string;
     label?: string;
 }
@@ -180,7 +240,7 @@ export interface ItemEntity {
     id: string;
     type: ItemType;
     spriteKey: string;
-    position: { x: number; y: number };
+    position: Vector2Like;
     isPlaced: boolean;
     isDragging: boolean;
     scale: number;
@@ -190,8 +250,8 @@ export interface ItemEntity {
 // 目标位置实体状态
 export interface SlotEntity {
     id: string;
-    position: { x: number; y: number };
-    size: { w: number; h: number };
+    position: Vector2Like;
+    size: SizeLike;
     occupied: boolean;
     placedItemId?: string;
 }
