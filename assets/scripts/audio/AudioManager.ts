@@ -1,5 +1,5 @@
 import { AudioClip, resources } from 'cc';
-import { GAME_CONFIG } from '../../data/Constants';
+import { GAME_CONFIG } from '../data/Constants';
 
 type AudioContextLike = {
   currentTime: number;
@@ -23,6 +23,9 @@ declare global {
 }
 
 const SFX_RESOURCE_MAP: Record<string, string> = {
+  // 当前资源实际位于 assets/resources/audio/sfx_item_*.mp3，
+  // 因此 resources.load 需要使用扁平路径 audio/sfx_item_*。
+  // AUDIO_CONFIG 中的 audio/sfx/*.mp3 是规范化目标路径，待资源目录整理后再统一收敛。
   sfx_item_pickup: 'audio/sfx_item_pickup',
   sfx_item_place: 'audio/sfx_item_place',
   sfx_item_wrong: 'audio/sfx_item_wrong',

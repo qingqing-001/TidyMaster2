@@ -38,6 +38,8 @@ export const ITEM_TYPES = {
     BAG: 'bag',
     BOX: 'box',
     TRASH: 'trash',
+    SPONGE: 'sponge',
+    COUNTER: 'counter',
 } as const;
 
 // 场景配置
@@ -186,6 +188,7 @@ export const GAME_CONFIG = {
     BOSS_INTERVAL: 5,
     CHAPTER_COUNT: 3,
     LEVELS_PER_CHAPTER: 5,
+    ENABLE_DEBUG_LOG: false,
 } as const;
 
 // 章节配置
@@ -202,8 +205,8 @@ export const CHAPTER_CONFIG = {
         id: 2,
         name: 'chapter2',
         displayName: '第二章：熟练挑战',
-        levelRange: [6, 10] as [number, number],
-        bossLevels: [10],
+        levelRange: [201, 205] as [number, number],
+        bossLevels: [205],
         rewardChapter: 2,
         unlockRequirement: 10,  // 需要累计10星解锁
     },
@@ -292,9 +295,11 @@ export const STORAGE_KEYS = {
 export const GAME_EVENTS = {
     ITEM_PLACED: 'item-placed',
     ITEM_PICKED: 'item-picked',
+    ITEM_REMOVED: 'item-removed',
     LEVEL_COMPLETE: 'level-complete',
     LEVEL_FAILED: 'level-failed',
     LEVEL_START: 'level-start',
+    LEVEL_LOADED: 'level-loaded',
     COMBO_TRIGGERED: 'combo-triggered',
     AD_REWARD_GRANTED: 'ad-reward-granted',
     SCORE_UPDATED: 'score-updated',

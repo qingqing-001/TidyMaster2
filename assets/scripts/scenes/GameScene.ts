@@ -1,22 +1,34 @@
-import { _decorator, Component, Node, instantiate, Sprite, UITransform, Vec3, v3, Label, Color } from 'cc';
+import { _decorator, Component, Node, instantiate, Sprite, UITransform, Label, Color, UIOpacity } from 'cc';
 import { LevelManager, LevelDefinition, ItemConfig, SlotConfig } from '../gameplay/LevelManager';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS, GAME_CONFIG } from '../../data/Constants';
+import { GAME_EVENTS } from '../data/Constants';
 import { ItemController } from '../gameplay/ItemController';
 import { DragHandler } from '../gameplay/DragHandler';
 import { SlotController } from '../gameplay/SlotController';
 import { TimerController } from '../gameplay/TimerController';
 import { AudioManager } from '../audio/AudioManager';
-import { ParticleEffects } from '../effects/ParticleEffects';
-import { LEVEL_1_1, LEVEL_1_2, LEVEL_1_3, LEVEL_1_4, LEVEL_1_5, getLevelConfig, CHAPTER_1_LEVELS } from '../data/levels';
-import { LevelItemConfig, LevelSlotConfig } from '../data/types';
+import { getLevelConfig } from '../data/levels';
+import { LevelDataConfig, LevelItemConfig, LevelSlotConfig } from '../data/types';
+import { OperationType } from '../data/LevelData';
+import { WipeHandler } from '../gameplay/WipeHandler';
 
 const { ccclass, property } = _decorator;
 
-/**
- * 游戏关卡场景
- * 负责核心玩法的逻辑控制
- */
+interface WipeProgressPayload {
+    levelId?: number;
+    itemId?: string;
+    slotId?: string;
+    progress: number;
+    completed: boolean;
+}
+
+interface WipeCompletePayload {
+    levelId?: number;
+    itemId?: string;
+    slotId?: string;
+    progress: number;
+}
+
 @ccclass('GameScene')
 export class GameScene extends Component {
     @property({ type: Node, tooltip: '物品预制体' })
@@ -43,64 +55,62 @@ export class GameScene extends Component {
     private levelManager = new LevelManager();
     private eventManager = EventManager.getInstance();
     private audioManager = AudioManager.getInstance();
-    private currentLevelId: number = 1;  // 当前关卡ID，默认第1关
+    private currentLevelId = 1;
+    private currentLevelConfig: LevelDataConfig | null = null;
+    private wipeItemMap = new Map<string, LevelItemConfig>();
+    private wipeSlotMap = new Map<string, LevelSlotConfig>();
+    private completedWipeItems = new Set<string>();
+    private levelCompleted = false;
 
     onLoad() {
         this.registerEvents();
-        // 从第1关开始加载
         this.loadLevel(this.currentLevelId);
     }
 
-    /**
-     * 加载指定关卡
-     * @param levelId 关卡ID (1-5)
-     */
     public loadLevel(levelId: number): void {
-        // 获取关卡配置
         const levelConfig = getLevelConfig(levelId);
-        
+
         if (!levelConfig) {
-            console.warn(`[GameScene] 关卡 ${levelId} 不存在，加载教学关`);
-            this.loadTutorialLevel();
+            console.error(`[GameScene] 关卡 ${levelId} 不存在，且未配置可用 fallback，已取消加载`);
             return;
         }
 
-        // 将LevelDataConfig转换为LevelDefinition格式
+        this.currentLevelId = levelId;
+        this.currentLevelConfig = levelConfig;
+        this.levelCompleted = false;
+        this.setupWipeTargets(levelConfig);
+        this.completedWipeItems.clear();
+        this.clearLevelNodes();
+
         const levelDefinition: LevelDefinition = {
             id: `level_${levelId}`,
             name: levelConfig.sceneDisplayName,
-            items: levelConfig.items.map(item => ({
+            items: levelConfig.items.map((item) => ({
                 id: item.id,
                 type: item.type,
-                position: item.initialPos
+                position: item.initialPos,
             })),
-            slots: levelConfig.slots.map(slot => ({
+            slots: levelConfig.slots.map((slot) => ({
                 id: slot.id,
                 allowedItemTypes: slot.acceptTypes,
-                position: slot.pos
+                position: slot.pos,
             })),
             requiredItems: levelConfig.items.length,
-            timeLimit: levelConfig.timeLimit > 0 ? levelConfig.timeLimit : undefined
+            timeLimit: levelConfig.timeLimit > 0 ? levelConfig.timeLimit : undefined,
         };
 
         this.levelManager.loadLevel(levelDefinition);
         this.instantiateLevelObjects(levelDefinition);
         this.updateProgressDisplay();
 
-        // 启动计时器（如果有时间限制）
         if (levelDefinition.timeLimit && this.timerController) {
             this.timerController.startTimer(levelDefinition.timeLimit);
         } else if (levelDefinition.timeLimit && this.timeLabel) {
             const timerNode = this.node.getChildByName('Timer');
-            if (timerNode) {
-                const timer = timerNode.getComponent(TimerController);
-                if (timer) {
-                    timer.startTimer(levelDefinition.timeLimit!);
-                }
-            }
+            const timer = timerNode?.getComponent(TimerController) ?? null;
+            timer?.startTimer(levelDefinition.timeLimit);
         }
 
-        this.currentLevelId = levelId;
         this.eventManager.emit(GAME_EVENTS.LEVEL_LOADED, levelDefinition);
         console.log(`[GameScene] 已加载关卡 ${levelId}: ${levelConfig.sceneDisplayName}`);
     }
@@ -112,75 +122,42 @@ export class GameScene extends Component {
     private registerEvents(): void {
         this.eventManager.on(GAME_EVENTS.ITEM_PLACED, this.handleItemPlaced as any);
         this.eventManager.on(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
+        this.eventManager.on('wipe-progress', this.handleWipeProgress as any);
+        this.eventManager.on('item-wiped', this.handleItemWiped as any);
     }
 
     private unregisterEvents(): void {
         this.eventManager.off(GAME_EVENTS.ITEM_PLACED, this.handleItemPlaced as any);
         this.eventManager.off(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
+        this.eventManager.off('wipe-progress', this.handleWipeProgress as any);
+        this.eventManager.off('item-wiped', this.handleItemWiped as any);
     }
 
-    /**
-     * 加载教学关卡
-     */
-    private loadTutorialLevel(): void {
-        const tutorialLevel: LevelDefinition = {
-            id: 'tutorial_001',
-            name: '教学关',
-            items: [
-                { id: 'item_001', type: 'apple', position: { x: -200, y: -150 } },
-                { id: 'item_002', type: 'book', position: { x: 0, y: -150 } },
-                { id: 'item_003', type: 'cup', position: { x: 200, y: -150 } }
-            ],
-            slots: [
-                { id: 'slot_001', allowedItemTypes: ['apple'], position: { x: -200, y: 100 } },
-                { id: 'slot_002', allowedItemTypes: ['book'], position: { x: 0, y: 100 } },
-                { id: 'slot_003', allowedItemTypes: ['cup'], position: { x: 200, y: 100 } }
-            ],
-            requiredItems: 3,
-            timeLimit: 60
-        };
+    private setupWipeTargets(levelConfig: LevelDataConfig): void {
+        this.wipeItemMap.clear();
+        this.wipeSlotMap.clear();
 
-        this.levelManager.loadLevel(tutorialLevel);
-        this.instantiateLevelObjects(tutorialLevel);
-        this.updateProgressDisplay();
-
-        // 启动计时器
-        const timeLimit = tutorialLevel.timeLimit || 60; // 默认60秒
-        if (this.timerController) {
-            // 如果有独立的 TimerController 组件，使用它
-            this.timerController.startTimer(timeLimit);
-        } else if (this.timeLabel) {
-            // 尝试从子节点获取 TimerController
-            const timerNode = this.node.getChildByName('Timer');
-            if (timerNode) {
-                const timer = timerNode.getComponent(TimerController);
-                if (timer) {
-                    timer.startTimer(timeLimit);
+        levelConfig.items
+            .filter((item) => item.operation === OperationType.WIPE)
+            .forEach((item) => {
+                this.wipeItemMap.set(item.id, item);
+                const slot = levelConfig.slots.find((candidate) => candidate.id === item.targetSlotId);
+                if (slot) {
+                    this.wipeSlotMap.set(item.id, slot);
                 }
-            }
-        }
-
-        this.eventManager.emit(GAME_EVENTS.LEVEL_LOADED, tutorialLevel);
+            });
     }
 
-    /**
-     * 实例化关卡中的物品和槽位
-     */
+    private clearLevelNodes(): void {
+        this.itemContainer?.removeAllChildren();
+        this.slotContainer?.removeAllChildren();
+    }
+
     private instantiateLevelObjects(level: LevelDefinition): void {
-        // 实例化槽位
-        level.slots.forEach(slotConfig => {
-            this.createSlot(slotConfig);
-        });
-
-        // 实例化物品
-        level.items.forEach(itemConfig => {
-            this.createItem(itemConfig);
-        });
+        level.slots.forEach((slotConfig) => this.createSlot(slotConfig));
+        level.items.forEach((itemConfig) => this.createItem(itemConfig));
     }
 
-    /**
-     * 创建槽位
-     */
     private createSlot(config: SlotConfig): void {
         if (!this.slotPrefab || !this.slotContainer) {
             return;
@@ -199,18 +176,19 @@ export class GameScene extends Component {
 
         const transform = slotNode.getComponent(UITransform);
         if (transform) {
-            transform.setContentSize({ width: 100, height: 100 });
+            const slotData = this.currentLevelConfig?.slots.find((slot) => slot.id === config.id);
+            transform.setContentSize({
+                width: slotData?.size.w ?? 100,
+                height: slotData?.size.h ?? 100,
+            });
         }
 
         const sprite = slotNode.getComponent(Sprite);
         if (sprite) {
-            sprite.color = new Color(180, 180, 180, 255);
+            sprite.color = new Color(180, 180, 180, this.isWipeSlot(config.id) ? 150 : 255);
         }
     }
 
-    /**
-     * 创建物品
-     */
     private createItem(config: ItemConfig): void {
         if (!this.itemPrefab || !this.itemContainer) {
             return;
@@ -226,25 +204,85 @@ export class GameScene extends Component {
             itemController.setup(config.id, config.type);
         }
 
-        const dragHandler = itemNode.getComponent(DragHandler);
-        if (!dragHandler) {
-            itemNode.addComponent(DragHandler);
+        const levelItem = this.currentLevelConfig?.items.find((item) => item.id === config.id) ?? null;
+        const isWipeItem = levelItem?.operation === OperationType.WIPE;
+
+        if (isWipeItem) {
+            this.setupWipeItem(itemNode, levelItem!);
+        } else {
+            const dragHandler = itemNode.getComponent(DragHandler);
+            if (!dragHandler) {
+                itemNode.addComponent(DragHandler);
+            }
         }
 
         const transform = itemNode.getComponent(UITransform);
         if (transform) {
-            transform.setContentSize({ width: 80, height: 80 });
+            const targetSlot = levelItem ? this.wipeSlotMap.get(levelItem.id) : null;
+            transform.setContentSize({
+                width: targetSlot?.size.w ?? 80,
+                height: targetSlot?.size.h ?? 80,
+            });
         }
 
         const sprite = itemNode.getComponent(Sprite);
         if (sprite) {
-            sprite.color = new Color(100, 200, 100, 255);
+            sprite.color = isWipeItem ? new Color(210, 170, 110, 255) : new Color(100, 200, 100, 255);
         }
     }
 
-    /**
-     * 处理物品归位成功事件
-     */
+    private setupWipeItem(itemNode: Node, levelItem: LevelItemConfig): void {
+        const wipeSlot = this.wipeSlotMap.get(levelItem.id);
+        const requiredDistance = Math.max((wipeSlot?.size.w ?? 180) + (wipeSlot?.size.h ?? 120), 180);
+        const wipeThreshold = 100;
+        const wipeSpeed = 1;
+        const wipeHandler = itemNode.getComponent(WipeHandler) ?? itemNode.addComponent(WipeHandler);
+        wipeHandler.wipeTarget = itemNode;
+        wipeHandler.wipeThreshold = wipeThreshold;
+        wipeHandler.wipeSpeed = wipeSpeed;
+        wipeHandler.setWipeMetadata({
+            levelId: this.currentLevelId,
+            itemId: levelItem.id,
+            slotId: wipeSlot?.id,
+            targetLabel: wipeSlot?.label,
+            requiredDistance,
+            wipeThreshold,
+            wipeSpeed,
+        });
+
+        let stainNode = itemNode.getChildByName('StainOverlay');
+        if (!stainNode) {
+            stainNode = new Node('StainOverlay');
+            stainNode.setParent(itemNode);
+            stainNode.setPosition(0, 0, 0);
+            stainNode.addComponent(UITransform);
+            stainNode.addComponent(Sprite);
+        }
+
+        const stainTransform = stainNode.getComponent(UITransform);
+        if (stainTransform && wipeSlot) {
+            stainTransform.setContentSize({ width: wipeSlot.size.w, height: wipeSlot.size.h });
+        }
+
+        const stainSprite = stainNode.getComponent(Sprite)!;
+        stainSprite.color = new Color(120, 80, 40, 230);
+        if (!stainNode.getComponent(UIOpacity)) {
+            stainNode.addComponent(UIOpacity);
+        }
+
+        wipeHandler.stainSprite = stainSprite;
+        wipeHandler.reset();
+    }
+
+    private isWipeSlot(slotId: string): boolean {
+        for (const slot of this.wipeSlotMap.values()) {
+            if (slot.id === slotId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private handleItemPlaced(data: { itemId: string; slotId: string }): void {
         this.levelManager.markItemPlaced(data.itemId);
         this.updateProgressDisplay();
@@ -254,31 +292,57 @@ export class GameScene extends Component {
         }
     }
 
-    /**
-     * 处理物品从槽位移除事件（玩家重新拖拽已放置物品）
-     */
     private handleItemRemoved(data: { itemId: string; slotId: string }): void {
-        // 物品被移除时，需要从已放置列表中移除
         this.levelManager.removeItem(data.itemId);
+        this.completedWipeItems.delete(data.itemId);
         this.updateProgressDisplay();
     }
 
-    /**
-     * 更新进度显示
-     */
-    private updateProgressDisplay(): void {
+    private handleWipeProgress(data?: WipeProgressPayload): void {
+        if (!data || data.levelId !== this.currentLevelId || !this.progressLabel) {
+            return;
+        }
+
+        const total = this.levelManager.getCurrentLevel()?.requiredItems || 0;
+        const completed = this.levelManager.getPlacedCount();
+        this.progressLabel.string = `擦洗 ${Math.round(data.progress)}% · 完成 ${completed}/${total}`;
+    }
+
+    private handleItemWiped(data?: WipeCompletePayload): void {
+        if (!data || data.levelId !== this.currentLevelId || !data.itemId) {
+            return;
+        }
+
+        this.completedWipeItems.add(data.itemId);
+        this.levelManager.markItemPlaced(data.itemId);
+        this.updateProgressDisplay(true, data.itemId);
+
+        if (this.levelManager.isLevelComplete()) {
+            this.onLevelComplete(3);
+        }
+    }
+
+    private updateProgressDisplay(isWipeComplete = false, wipeItemId?: string): void {
         if (!this.progressLabel) {
             return;
         }
 
         const placed = this.levelManager.getPlacedCount();
         const total = this.levelManager.getCurrentLevel()?.requiredItems || 0;
+
+        if (isWipeComplete && wipeItemId) {
+            this.progressLabel.string = `擦洗完成：${wipeItemId} · ${placed}/${total}`;
+            return;
+        }
+
+        if (this.wipeItemMap.size > 0 && placed < total) {
+            this.progressLabel.string = `教学目标 ${placed}/${total} · 擦洗 ${this.completedWipeItems.size}/${this.wipeItemMap.size}`;
+            return;
+        }
+
         this.progressLabel.string = `${placed}/${total}`;
     }
 
-    /**
-     * 物品归位成功
-     */
     onItemPlaced(itemId: string): void {
         this.levelManager.markItemPlaced(itemId);
         this.updateProgressDisplay();
@@ -288,30 +352,34 @@ export class GameScene extends Component {
         }
     }
 
-    /**
-     * 关卡完成
-     */
     onLevelComplete(stars: number): void {
-        // 停止计时器
+        if (this.levelCompleted) {
+            return;
+        }
+        this.levelCompleted = true;
+
         if (this.timerController) {
             this.timerController.pauseTimer();
         }
-        
+
         this.audioManager.playClick();
         this.eventManager.emit(GAME_EVENTS.LEVEL_COMPLETE, {
             levelId: this.levelManager.getCurrentLevel()?.id,
-            stars
+            stars,
+            sourceLevelId: this.currentLevelId,
+            sceneDisplayName: this.currentLevelConfig?.sceneDisplayName,
         });
+
+        if (this.progressLabel) {
+            this.progressLabel.string = `关卡完成 · ${stars}星`;
+        }
 
         console.log(`[GameScene] 关卡完成！获得 ${stars} 星评价`);
     }
 
-    /**
-     * 时间耗尽
-     */
     onTimeOut(): void {
         this.eventManager.emit(GAME_EVENTS.LEVEL_FAILED, {
-            levelId: this.levelManager.getCurrentLevel()?.id
+            levelId: this.levelManager.getCurrentLevel()?.id,
         });
     }
 

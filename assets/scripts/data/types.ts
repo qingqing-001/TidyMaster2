@@ -41,6 +41,8 @@ export const ITEM_TYPES = {
     BAG: 'bag',
     BOX: 'box',
     TRASH: 'trash',
+    SPONGE: 'sponge',
+    COUNTER: 'counter',
 } as const;
 
 export type ItemType = typeof ITEM_TYPES[keyof typeof ITEM_TYPES];

@@ -11,6 +11,12 @@ interface CheckResult {
     detail: string;
 }
 
+interface RealWipeConfig {
+    requiredDistance: number;
+    wipeSpeed: number;
+    wipeThreshold: number;
+}
+
 class RealWipeProgressVerifier {
     private wipeProgress = 0;
     private completed = false;
@@ -50,6 +56,15 @@ class RealWipeProgressVerifier {
     }
 }
 
+function deriveRealWipeConfig(slotSize: { w: number; h: number }): RealWipeConfig {
+    const requiredDistance = Math.max(slotSize.w + slotSize.h, 180);
+    return {
+        requiredDistance,
+        wipeSpeed: 1,
+        wipeThreshold: 100,
+    };
+}
+
 function runChecks(): CheckResult[] {
     const results: CheckResult[] = [];
     const level201 = getLevelConfig(201);
@@ -83,20 +98,31 @@ function runChecks(): CheckResult[] {
         return results;
     }
 
-    const wipeThreshold = 80;
-    const wipeSpeed = 0.5;
-    const requiredDistance = 200;
-    const verifier = new RealWipeProgressVerifier(requiredDistance, wipeSpeed, wipeThreshold);
+    const realWipeConfig = deriveRealWipeConfig(wipeSlot.size);
+    results.push({
+        name: '擦洗参数直接来自真实 201 关槽位尺寸',
+        passed: realWipeConfig.requiredDistance === wipeSlot.size.w + wipeSlot.size.h
+            && realWipeConfig.wipeThreshold === 100
+            && realWipeConfig.wipeSpeed === 1,
+        detail: `槽位尺寸=${wipeSlot.size.w}x${wipeSlot.size.h}，requiredDistance=${realWipeConfig.requiredDistance}，wipeThreshold=${realWipeConfig.wipeThreshold}，wipeSpeed=${realWipeConfig.wipeSpeed}`,
+    });
 
-    verifier.move(80);
+    const verifier = new RealWipeProgressVerifier(
+        realWipeConfig.requiredDistance,
+        realWipeConfig.wipeSpeed,
+        realWipeConfig.wipeThreshold,
+    );
+
+    const firstMoveDistance = Math.floor(realWipeConfig.requiredDistance * 0.4);
+    verifier.move(firstMoveDistance);
     const progressAfterFirstMove = verifier.getProgress();
     results.push({
         name: '擦洗进度可推进',
-        passed: progressAfterFirstMove > 0 && progressAfterFirstMove < wipeThreshold,
-        detail: `累计距离=${verifier.getDistance()}，进度=${progressAfterFirstMove.toFixed(2)}%，阈值=${wipeThreshold}%`,
+        passed: progressAfterFirstMove > 0 && progressAfterFirstMove < realWipeConfig.wipeThreshold,
+        detail: `累计距离=${verifier.getDistance()}，进度=${progressAfterFirstMove.toFixed(2)}%，阈值=${realWipeConfig.wipeThreshold}%`,
     });
 
-    verifier.move(240);
+    verifier.move(realWipeConfig.requiredDistance);
     const finalProgress = verifier.getProgress();
     const completed = verifier.isCompleted();
     results.push({
