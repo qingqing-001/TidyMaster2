@@ -8,6 +8,8 @@ import { SlotController } from '../gameplay/SlotController';
 import { TimerController } from '../gameplay/TimerController';
 import { AudioManager } from '../audio/AudioManager';
 import { ParticleEffects } from '../effects/ParticleEffects';
+import { LEVEL_1_1, LEVEL_1_2, LEVEL_1_3, LEVEL_1_4, LEVEL_1_5, getLevelConfig, CHAPTER_1_LEVELS } from '../data/levels';
+import { LevelItemConfig, LevelSlotConfig } from '../data/types';
 
 const { ccclass, property } = _decorator;
 
@@ -41,10 +43,66 @@ export class GameScene extends Component {
     private levelManager = new LevelManager();
     private eventManager = EventManager.getInstance();
     private audioManager = AudioManager.getInstance();
+    private currentLevelId: number = 1;  // 当前关卡ID，默认第1关
 
     onLoad() {
         this.registerEvents();
-        this.loadTutorialLevel();
+        // 从第1关开始加载
+        this.loadLevel(this.currentLevelId);
+    }
+
+    /**
+     * 加载指定关卡
+     * @param levelId 关卡ID (1-5)
+     */
+    public loadLevel(levelId: number): void {
+        // 获取关卡配置
+        const levelConfig = getLevelConfig(levelId);
+        
+        if (!levelConfig) {
+            console.warn(`[GameScene] 关卡 ${levelId} 不存在，加载教学关`);
+            this.loadTutorialLevel();
+            return;
+        }
+
+        // 将LevelDataConfig转换为LevelDefinition格式
+        const levelDefinition: LevelDefinition = {
+            id: `level_${levelId}`,
+            name: levelConfig.sceneDisplayName,
+            items: levelConfig.items.map(item => ({
+                id: item.id,
+                type: item.type,
+                position: item.initialPos
+            })),
+            slots: levelConfig.slots.map(slot => ({
+                id: slot.id,
+                allowedItemTypes: slot.acceptTypes,
+                position: slot.pos
+            })),
+            requiredItems: levelConfig.items.length,
+            timeLimit: levelConfig.timeLimit > 0 ? levelConfig.timeLimit : undefined
+        };
+
+        this.levelManager.loadLevel(levelDefinition);
+        this.instantiateLevelObjects(levelDefinition);
+        this.updateProgressDisplay();
+
+        // 启动计时器（如果有时间限制）
+        if (levelDefinition.timeLimit && this.timerController) {
+            this.timerController.startTimer(levelDefinition.timeLimit);
+        } else if (levelDefinition.timeLimit && this.timeLabel) {
+            const timerNode = this.node.getChildByName('Timer');
+            if (timerNode) {
+                const timer = timerNode.getComponent(TimerController);
+                if (timer) {
+                    timer.startTimer(levelDefinition.timeLimit!);
+                }
+            }
+        }
+
+        this.currentLevelId = levelId;
+        this.eventManager.emit(GAME_EVENTS.LEVEL_LOADED, levelDefinition);
+        console.log(`[GameScene] 已加载关卡 ${levelId}: ${levelConfig.sceneDisplayName}`);
     }
 
     start() {

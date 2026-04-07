@@ -1,0 +1,51 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "TidyMaster",
+  "appid": "wxtidymaster123456",
+  "compileType": "miniprogram",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "preloadBackgroundData": false,
+    "minified": true,
+    "newFeature": true,
+    "coverView": true,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": true,
+    "scopeDataCheck": false,
+    "checkInvalidKey": true,
+    "checkSiteMap": true,
+    "uploadWithSourceMap": true,
+    "useMultiFrameRuntime": true,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "enableEngineNative": false,
+    "useIsolateContext": true,
+    "userConfirmedBundleSwitch": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "showES6CompileOption": false,
+    "minifyWXML": true,
+    "bundle": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": []
+    }
+  },
+  "srcMiniprogramRoot": "miniprogram/",
+  "isGameTourist": false,
+  "gameTemplateRoot": "game/",
+  "gameIcon": "",
+  "libVersion": "2.19.4",
+  "simulatorType": "wechat",
+  "simulatorLibVersion": "2.19.4"
+}
