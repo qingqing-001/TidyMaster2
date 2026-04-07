@@ -5,6 +5,7 @@
 
 import { OperationType } from './LevelData';
 import { LevelDataConfig } from './types';
+import { CHAPTER_2_LEVELS, LEVEL_2_1 } from './chapter2Levels';
 
 // 物品类型字符串常量
 const BOOK = 'book';
@@ -513,6 +514,7 @@ export const LEVEL_MAP: Record<number, LevelDataConfig> = {
     3: LEVEL_1_3,
     4: LEVEL_1_4,
     5: LEVEL_1_5,
+    201: LEVEL_2_1,
 };
 
 // 获取关卡配置的辅助函数
@@ -522,5 +524,5 @@ export function getLevelConfig(levelId: number): LevelDataConfig | undefined {
 
 // 获取章节的所有关卡
 export function getChapterLevels(chapter: number): LevelDataConfig[] {
-    return CHAPTER_1_LEVELS.filter(level => level.chapter === chapter);
+    return [...CHAPTER_1_LEVELS, ...CHAPTER_2_LEVELS].filter(level => level.chapter === chapter);
 }
