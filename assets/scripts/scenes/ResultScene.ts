@@ -1,6 +1,6 @@
 import { _decorator, Component, Node, Label, Sprite } from 'cc';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS } from '../../data/constants';
+import { GAME_EVENTS } from '../../data/Constants';
 
 const { ccclass, property } = _decorator;
 

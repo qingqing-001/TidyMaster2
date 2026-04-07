@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, Vec3, UITransform, Sprite, v3, Color, UIOpacity, tween } from 'cc';
-import { GAME_CONFIG } from '../../data/constants';
+import { GAME_CONFIG } from '../../data/Constants';
 
 const { ccclass, property } = _decorator;
 

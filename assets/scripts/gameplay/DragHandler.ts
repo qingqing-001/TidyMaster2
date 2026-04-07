@@ -1,6 +1,6 @@
 import { _decorator, Component, EventTouch, Node, Vec3, UITransform, tween, easing, v3, director } from 'cc';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS } from '../../data/constants';
+import { GAME_EVENTS } from '../../data/Constants';
 import { AudioManager } from '../audio/AudioManager';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { ItemController, ItemState } from './ItemController';

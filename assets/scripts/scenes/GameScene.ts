@@ -1,7 +1,7 @@
 import { _decorator, Component, Node, instantiate, Sprite, UITransform, Vec3, v3, Label, Color } from 'cc';
 import { LevelManager, LevelDefinition, ItemConfig, SlotConfig } from '../gameplay/LevelManager';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS, GAME_CONFIG } from '../../data/constants';
+import { GAME_EVENTS, GAME_CONFIG } from '../../data/Constants';
 import { ItemController } from '../gameplay/ItemController';
 import { DragHandler } from '../gameplay/DragHandler';
 import { SlotController } from '../gameplay/SlotController';
