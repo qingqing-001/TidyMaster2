@@ -8,9 +8,22 @@ export interface UserInfo {
   language?: string;
 }
 
+export interface SystemInfo {
+  platform?: string;
+  system?: string;
+  model?: string;
+  pixelRatio?: number;
+  screenWidth?: number;
+  screenHeight?: number;
+  windowWidth?: number;
+  windowHeight?: number;
+  language?: string;
+  [key: string]: unknown;
+}
+
 export interface IPlatformAdapter {
   isWechat(): boolean;
-  getSystemInfo(): Record<string, unknown> | null;
+  getSystemInfo(): SystemInfo | null;
   vibrateShort(): void;
   showToast(message: string): void;
   showLoading(title?: string): void;
@@ -23,61 +36,54 @@ export interface IPlatformAdapter {
   requestAnimationFrame(callback: () => void): void;
 }
 
-export class PlatformAdapter implements IPlatformAdapter {
-  public isWechat(): boolean {
-    return false;
-  }
+export abstract class PlatformAdapter implements IPlatformAdapter {
+  public abstract isWechat(): boolean;
 
-  public getSystemInfo(): Record<string, unknown> | null {
-    return null;
-  }
+  public abstract getSystemInfo(): SystemInfo | null;
 
-  public vibrateShort(): void {
-    // noop for non-wechat platforms
-  }
+  public abstract vibrateShort(): void;
 
-  public showToast(message: string): void {
-    console.log('[PlatformAdapter] showToast:', message);
-  }
+  public abstract showToast(message: string): void;
 
-  public showLoading(title?: string): void {
-    console.log('[PlatformAdapter] showLoading:', title);
+  public showLoading(title = '加载中...'): void {
+    void title;
   }
 
   public hideLoading(): void {
-    console.log('[PlatformAdapter] hideLoading');
+    // no-op by default
   }
 
   public share(title: string, imageUrl: string): void {
-    console.log('[PlatformAdapter] share:', title, imageUrl);
+    void title;
+    void imageUrl;
   }
 
   public async login(): Promise<UserInfo> {
-    console.log('[PlatformAdapter] login');
-    return {};
+    return this.getUserInfo() ?? {};
   }
 
   public getUserInfo(): UserInfo | null {
-    console.log('[PlatformAdapter] getUserInfo');
     return null;
   }
 
   public getStorage(key: string): string | null {
-    console.log('[PlatformAdapter] getStorage:', key);
+    void key;
     return null;
   }
 
   public setStorage(key: string, value: string): void {
-    console.log('[PlatformAdapter] setStorage:', key, value);
+    void key;
+    void value;
   }
 
   public requestAnimationFrame(callback: () => void): void {
-    // Fallback to browser API
-    if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(callback);
-    } else {
-      // Fallback to setTimeout
-      setTimeout(callback, 16);
+    const raf = typeof globalThis !== 'undefined' ? globalThis.requestAnimationFrame : undefined;
+
+    if (typeof raf === 'function') {
+      raf.call(globalThis, callback);
+      return;
     }
+
+    setTimeout(callback, 16);
   }
 }

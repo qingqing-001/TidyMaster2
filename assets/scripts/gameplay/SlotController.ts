@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Vec3, UITransform, Color, Sprite, v3 } from 'cc';
+import { _decorator, Component, Node, Vec3, UITransform, Sprite, v3, Color, UIOpacity, tween } from 'cc';
 import { GAME_CONFIG } from '../../data/constants';
 
 const { ccclass, property } = _decorator;
@@ -13,90 +13,112 @@ export class SlotController extends Component {
 
   private readonly itemIds: string[] = [];
   private highlightNode: Node | null = null;
-  private highlightOpacity = 0;
+  private highlightOpacity: UIOpacity | null = null;
+  private highlightSprite: Sprite | null = null;
 
   onLoad(): void {
     this.createHighlightNode();
   }
 
-  /**
-   * 创建高亮提示节点
-   */
+  public setAllowedItemTypes(types: string[]): void {
+    this.allowedItemTypes = [...types];
+  }
+
   private createHighlightNode(): void {
-    // 创建一个子节点用于高亮显示
+    if (this.highlightNode) {
+      return;
+    }
+
     this.highlightNode = new Node();
     this.highlightNode.name = 'Highlight';
     this.highlightNode.setParent(this.node);
+    this.highlightNode.setPosition(v3(0, 0, 0));
+    this.highlightNode.setSiblingIndex(this.node.children.length);
 
-    const uiTransform = this.highlightNode.addComponent(UITransform);
+    const slotTransform = this.node.getComponent(UITransform) as UITransform | null;
+    const highlightTransform = this.highlightNode.addComponent(UITransform) as UITransform;
+    if (slotTransform) {
+      highlightTransform.contentSize = slotTransform.contentSize;
+      highlightTransform.anchorX = slotTransform.anchorX;
+      highlightTransform.anchorY = slotTransform.anchorY;
+    }
 
-    const sprite = this.highlightNode.addComponent(Sprite);
-    // TODO: 设置高亮图片资源
+    const sprite = this.highlightNode.addComponent(Sprite) as Sprite;
+    sprite.color = new Color(255, 235, 140, 255);
+    sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+    this.highlightSprite = sprite;
 
-    // 高亮初始隐藏
-    this.highlightOpacity = 0;
+    const opacity = this.highlightNode.addComponent(UIOpacity);
+    opacity.opacity = 0;
+    this.highlightOpacity = opacity;
+    this.highlightNode.active = false;
   }
 
-  /**
-   * 判断槽位是否可以接受指定类型的物品
-   */
   public canAcceptItem(itemType: string): boolean {
     if (this.allowedItemTypes.length === 0) {
-      return true; // 如果没有限制，接受所有类型
+      return true;
     }
     return this.allowedItemTypes.includes(itemType);
   }
 
-  /**
-   * 检测物品是否在目标区域内
-   */
   public containsItem(itemNode: Node): boolean {
     if (!itemNode.isValid) {
       return false;
     }
 
-    const itemPos = itemNode.worldPosition;
-    const slotPos = this.node.worldPosition;
-    const uiTransform = this.node.getComponent(UITransform);
-    const size = (uiTransform as any)?.contentSize;
-
-    if (!size) {
+    const slotTransform = this.node.getComponent(UITransform) as UITransform | null;
+    if (!slotTransform) {
       return false;
     }
 
-    // 计算物品到槽位中心的距离
-    const dx = itemPos.x - slotPos.x;
-    const dy = itemPos.y - slotPos.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const threshold = Math.max(size.width, size.height) / 2;
+    const itemTransform = itemNode.getComponent(UITransform) as UITransform | null;
+    const slotPos = this.node.worldPosition;
+    const itemPos = itemNode.worldPosition;
+    const slotSize = slotTransform.contentSize;
+    const itemSize = itemTransform?.contentSize;
 
-    return distance < threshold;
+    const thresholdX = (slotSize.width + (itemSize?.width ?? 0)) / 2;
+    const thresholdY = (slotSize.height + (itemSize?.height ?? 0)) / 2;
+
+    return Math.abs(itemPos.x - slotPos.x) <= thresholdX && Math.abs(itemPos.y - slotPos.y) <= thresholdY;
   }
 
-  /**
-   * 显示高亮提示
-   */
   public showHighlight(): void {
-    if (this.highlightNode) {
-      this.highlightOpacity = 150;
-      // TODO: 实际实现中可以通过修改Sprite的color.alpha或其他方式
+    if (!this.highlightNode || !this.highlightSprite || !this.highlightOpacity) {
+      return;
     }
+
+    this.highlightNode.active = true;
+    this.highlightNode.setScale(0.96, 0.96, 1);
+    this.highlightSprite.color = new Color(255, 235, 140, 255);
+    tween(this.highlightOpacity).stop();
+    tween(this.highlightNode).stop();
+    tween(this.highlightOpacity).to(0.12, { opacity: 170 }).start();
+    tween(this.highlightNode).to(0.12, { scale: v3(1.03, 1.03, 1) }).start();
   }
 
-  /**
-   * 隐藏高亮提示
-   */
   public hideHighlight(): void {
-    if (this.highlightNode) {
-      this.highlightOpacity = 0;
-      // TODO: 实际实现中可以通过修改Sprite的color.alpha或其他方式
+    if (!this.highlightNode || !this.highlightOpacity) {
+      return;
     }
+
+    tween(this.highlightOpacity).stop();
+    tween(this.highlightNode).stop();
+    tween(this.highlightOpacity)
+      .to(0.1, { opacity: 0 })
+      .call(() => {
+        if (this.highlightNode) {
+          this.highlightNode.active = false;
+        }
+      })
+      .start();
   }
 
-  /**
-   * 添加物品到槽位
-   */
   public addItem(itemId: string): boolean {
+    if (this.itemIds.includes(itemId)) {
+      return false;
+    }
+
     if (this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY) {
       return false;
     }
@@ -105,9 +127,6 @@ export class SlotController extends Component {
     return true;
   }
 
-  /**
-   * 从槽位移除物品
-   */
   public removeItem(itemId: string): boolean {
     const index = this.itemIds.indexOf(itemId);
     if (index !== -1) {
@@ -117,38 +136,23 @@ export class SlotController extends Component {
     return false;
   }
 
-  /**
-   * 获取槽位中的所有物品ID
-   */
   public getItems(): string[] {
     return [...this.itemIds];
   }
 
-  /**
-   * 清空槽位
-   */
   public clear(): void {
     this.itemIds.length = 0;
   }
 
-  /**
-   * 获取槽位的世界坐标
-   */
   public getWorldPosition(): Vec3 {
     const pos = this.node.worldPosition;
-    return { x: pos.x, y: pos.y, z: pos.z };
+    return v3(pos.x, pos.y, pos.z);
   }
 
-  /**
-   * 判断槽位是否已满
-   */
   public isFull(): boolean {
     return this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY;
   }
 
-  /**
-   * 判断槽位是否为空
-   */
   public isEmpty(): boolean {
     return this.itemIds.length === 0;
   }

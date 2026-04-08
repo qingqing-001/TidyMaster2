@@ -1,4 +1,4 @@
-import { _decorator, Component, Vec3, Node, instantiate, Sprite, tween, v3, UITransform } from 'cc';
+import { _decorator, Component, Vec3, Node, instantiate, Sprite, tween, v3, UITransform, ParticleSystem, color, math, UIOpacity } from 'cc';
 import { GAME_CONFIG } from '../../data/constants';
 
 const { ccclass, property } = _decorator;
@@ -12,20 +12,19 @@ export class ParticleEffects extends Component {
   private errorParticlePrefab: Node | null = null;
 
   private static instance: ParticleEffects | null = null;
-  private particlePool: Map<string, Node[]> = new Map();
 
-  public static getInstance(): ParticleEffects {
-    return ParticleEffects.instance!;
+  public static getInstance(): ParticleEffects | null {
+    return ParticleEffects.instance;
   }
 
   onLoad(): void {
     ParticleEffects.instance = this;
-    this.initParticlePool();
   }
 
-  private initParticlePool(): void {
-    this.particlePool.set('star', []);
-    this.particlePool.set('error', []);
+  onDestroy(): void {
+    if (ParticleEffects.instance === this) {
+      ParticleEffects.instance = null;
+    }
   }
 
   public static showSuccessParticles(position: Vec3): void {
@@ -34,19 +33,9 @@ export class ParticleEffects extends Component {
       return;
     }
 
-    if (instance.successParticlePrefab) {
-      const particle = instantiate(instance.successParticlePrefab);
-      particle.setPosition(position);
-      instance.node.addChild(particle);
-
-      setTimeout(() => {
-        if (particle.isValid) {
-          particle.destroy();
-        }
-      }, 2000);
-    } else {
+    instance.spawnEffect(position, instance.successParticlePrefab, () => {
       instance.createStarBurst(position);
-    }
+    });
   }
 
   public static showErrorParticles(position: Vec3): void {
@@ -55,99 +44,143 @@ export class ParticleEffects extends Component {
       return;
     }
 
-    if (instance.errorParticlePrefab) {
-      const particle = instantiate(instance.errorParticlePrefab);
-      particle.setPosition(position);
-      instance.node.addChild(particle);
-
-      setTimeout(() => {
-        if (particle.isValid) {
-          particle.destroy();
-        }
-      }, 1500);
-    } else {
+    instance.spawnEffect(position, instance.errorParticlePrefab, () => {
       instance.createErrorBurst(position);
+    });
+  }
+
+  private spawnEffect(position: Vec3, prefab: Node | null, fallback: () => void): void {
+    if (prefab) {
+      const particle = instantiate(prefab);
+      particle.setPosition(position);
+      this.node.addChild(particle);
+      this.cleanupNode(particle, 1.5);
+      return;
     }
+
+    fallback();
   }
 
   private createStarBurst(position: Vec3): void {
-    const starCount = 8;
-    const distance = 50;
-    const duration = 0.6;
+    if (this.tryCreateParticleSystem(position, true)) {
+      return;
+    }
 
-    for (let i = 0; i < starCount; i++) {
-      const star = this.createStarSprite();
-      star.setPosition(position.x, position.y, position.z);
+    this.createSpriteBurst(position, true);
+  }
 
-      const angle = (i / starCount) * Math.PI * 2;
-      const targetX = position.x + Math.cos(angle) * distance;
-      const targetY = position.y + Math.sin(angle) * distance;
+  private createErrorBurst(position: Vec3): void {
+    if (this.tryCreateParticleSystem(position, false)) {
+      return;
+    }
 
-      star.setScale(0.5, 0.5, 1);
-      this.node.addChild(star);
+    this.createSpriteBurst(position, false);
+  }
 
-      const scaleOne: Vec3 = { x: 1, y: 1, z: 1 };
-      const scaleZero: Vec3 = { x: 0, y: 0, z: 0 };
+  private tryCreateParticleSystem(position: Vec3, success: boolean): boolean {
+    try {
+      const node = new Node();
+      node.name = success ? 'particle_star' : 'particle_error';
+      node.setPosition(position);
+      this.node.addChild(node);
 
-      tween(star)
-        .to(0.1, { scale: scaleOne })
-        .to(duration, { scale: scaleZero })
+      const particleSystem = node.addComponent(ParticleSystem) as unknown as ParticleSystem;
+      if (success) {
+        particleSystem.duration = 0.45;
+        particleSystem.emissionRate = 60;
+        particleSystem.totalParticles = 36;
+        particleSystem.life = 0.55;
+        particleSystem.lifeVar = 0.15;
+        particleSystem.startColor = color(255, 244, 120, 255);
+        particleSystem.endColor = color(255, 180, 0, 0);
+        particleSystem.startSize = 18;
+        particleSystem.endSize = 0;
+        particleSystem.startSpeed = 180;
+        particleSystem.endSpeed = 20;
+        particleSystem.gravity = v3(0, -220, 0);
+        particleSystem.posVar = v3(12, 12, 0);
+      } else {
+        particleSystem.duration = 0.25;
+        particleSystem.emissionRate = 42;
+        particleSystem.totalParticles = 20;
+        particleSystem.life = 0.3;
+        particleSystem.lifeVar = 0.1;
+        particleSystem.startColor = color(255, 80, 80, 255);
+        particleSystem.endColor = color(180, 0, 0, 0);
+        particleSystem.startSize = 12;
+        particleSystem.endSize = 0;
+        particleSystem.startSpeed = 120;
+        particleSystem.endSpeed = 10;
+        particleSystem.gravity = v3(0, -120, 0);
+        particleSystem.posVar = v3(8, 8, 0);
+      }
+
+      particleSystem.resetSystem();
+      this.cleanupNode(node, success ? 1.0 : 0.6);
+      return true;
+    } catch (error) {
+      if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+        console.warn('[ParticleEffects] ParticleSystem unavailable, fallback to sprite burst', error);
+      }
+      return false;
+    }
+  }
+
+  private createSpriteBurst(position: Vec3, success: boolean): void {
+    const count = success ? 8 : 6;
+    const distance = success ? 64 : 42;
+    const duration = success ? 0.55 : 0.35;
+
+    for (let index = 0; index < count; index++) {
+      const spriteNode = this.createBurstSprite(success, index);
+      spriteNode.setPosition(position);
+      this.node.addChild(spriteNode);
+
+      const angle = (Math.PI * 2 * index) / count;
+      const randomDistance = distance + math.randomRange(-8, 8);
+      const targetX = position.x + Math.cos(angle) * randomDistance;
+      const targetY = position.y + Math.sin(angle) * randomDistance;
+      const targetPosition = v3(targetX, targetY, position.z);
+      const opacity = spriteNode.addComponent(UIOpacity);
+      opacity.opacity = 255;
+
+      tween(spriteNode)
+        .parallel(
+          tween(spriteNode).to(duration, { position: targetPosition }),
+          tween(spriteNode).to(duration * 0.4, { scale: v3(1.15, 1.15, 1) }).to(duration * 0.6, { scale: v3(0, 0, 1) }),
+          tween(opacity).to(duration, { opacity: 0 })
+        )
         .call(() => {
-          if (star.isValid) {
-            star.destroy();
+          if (spriteNode.isValid) {
+            spriteNode.destroy();
           }
         })
         .start();
     }
 
     if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
-      console.log('[ParticleEffects] Star burst at:', position);
+      console.log(`[ParticleEffects] ${success ? 'success' : 'error'} sprite burst at`, position);
     }
   }
 
-  private createErrorBurst(position: Vec3): void {
-    const error = this.createErrorSprite();
-    error.setPosition(position.x, position.y, position.z);
-    error.setScale(0.3, 0.3, 1);
-    this.node.addChild(error);
+  private createBurstSprite(success: boolean, index: number): Node {
+    const node = new Node();
+    node.name = success ? `star_${index}` : `error_${index}`;
+    const sprite = node.addComponent(Sprite) as unknown as Sprite;
+    const transform = node.addComponent(UITransform) as unknown as UITransform;
 
-    const scaleOneTwo: Vec3 = { x: 1.2, y: 1.2, z: 1 };
-    const scaleZero: Vec3 = { x: 0, y: 0, z: 0 };
+    transform.contentSize = success ? { width: 24, height: 24 } : { width: 18, height: 18 };
+    sprite.color = success ? color(255, 231, 90, 255) : color(255, 90, 90, 255);
+    node.setScale(v3(0.35, 0.35, 1));
 
-    tween(error)
-      .to(0.3, { scale: scaleOneTwo })
-      .to(0.2, { scale: scaleZero })
-      .call(() => {
-        if (error.isValid) {
-          error.destroy();
-        }
-      })
-      .start();
-
-    if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
-      console.log('[ParticleEffects] Error burst at:', position);
-    }
+    return node;
   }
 
-  private createStarSprite(): Node {
-    const star = new Node();
-    star.name = 'star';
-    star.addComponent(Sprite);
-
-    const transform = star.addComponent(UITransform);
-    (transform as any).contentSize = { width: 30, height: 30 };
-
-    return star;
-  }
-
-  private createErrorSprite(): Node {
-    const error = new Node();
-    error.name = 'error';
-    error.addComponent(Sprite);
-
-    const transform = error.addComponent(UITransform);
-    (transform as any).contentSize = { width: 40, height: 40 };
-
-    return error;
+  private cleanupNode(node: Node, delaySeconds: number): void {
+    window.setTimeout(() => {
+      if (node.isValid) {
+        node.destroy();
+      }
+    }, delaySeconds * 1000);
   }
 }

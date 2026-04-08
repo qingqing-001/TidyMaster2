@@ -1,116 +1,135 @@
-import { PlatformAdapter, UserInfo } from './PlatformAdapter';
+import { PlatformAdapter, SystemInfo, UserInfo } from './PlatformAdapter';
 
 export class WebAdapter extends PlatformAdapter {
+  private cachedUserInfo: UserInfo | null = null;
+
   public override isWechat(): boolean {
     return false;
   }
 
-  public override getSystemInfo(): Record<string, unknown> | null {
-    // 返回浏览器系统信息
-    const info: Record<string, unknown> = {
+  public override getSystemInfo(): SystemInfo | null {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return {
+        platform: 'web',
+      };
+    }
+
+    return {
       platform: 'web',
       system: navigator.userAgent,
       model: 'browser',
       pixelRatio: window.devicePixelRatio || 1,
-      screenWidth: window.screen.width,
-      screenHeight: window.screen.height,
+      screenWidth: window.screen?.width,
+      screenHeight: window.screen?.height,
       windowWidth: window.innerWidth,
       windowHeight: window.innerHeight,
       language: navigator.language,
     };
-    return info;
   }
 
   public override vibrateShort(): void {
-    // 浏览器振动API
-    if (navigator.vibrate) {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       navigator.vibrate(15);
     }
   }
 
   public override showToast(message: string): void {
-    // 在Web上可以使用alert或创建自定义toast
-    // 这里使用alert作为简单实现
     console.log('[WebAdapter] Toast:', message);
-    // 实际项目中可以实现一个自定义的toast组件
   }
 
-  public override showLoading(title?: string): void {
+  public override showLoading(title = '加载中...'): void {
     console.log('[WebAdapter] Loading:', title);
-    // 实际项目中可以显示一个loading遮罩层
   }
 
   public override hideLoading(): void {
     console.log('[WebAdapter] Hide loading');
-    // 实际项目中可以隐藏loading遮罩层
   }
 
   public override share(title: string, imageUrl: string): void {
     console.log('[WebAdapter] Share:', title, imageUrl);
-    // Web平台可以使用Web Share API（如果支持）
-    if (navigator.share) {
-      navigator.share({
-        title,
-        // 由于Web Share API的局限性，可能无法直接分享图片
-      }).catch((err) => {
-        console.log('Share failed:', err);
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      navigator.share({ title }).catch((error) => {
+        console.log('[WebAdapter] Share failed:', error);
       });
-    } else {
-      // 降级处理：复制链接到剪贴板等
-      console.log('Web Share API not supported');
     }
   }
 
   public override async login(): Promise<UserInfo> {
-    console.log('[WebAdapter] Login');
-    // Web平台通常有自己的登录系统
-    // 这里返回一个模拟的用户信息
-    return {
+    const userInfo: UserInfo = {
       nickName: 'Web User',
       avatarUrl: '',
-      language: navigator.language,
+      language: typeof navigator !== 'undefined' ? navigator.language : undefined,
     };
+
+    this.cachedUserInfo = userInfo;
+
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      } catch (error) {
+        console.error('[WebAdapter] cache userInfo error:', error);
+      }
+    }
+
+    return userInfo;
   }
 
   public override getUserInfo(): UserInfo | null {
-    console.log('[WebAdapter] Get user info');
-    // 从localStorage或其他地方获取用户信息
-    const userInfoStr = localStorage.getItem('userInfo');
-    if (userInfoStr) {
-      try {
-        return JSON.parse(userInfoStr) as UserInfo;
-      } catch (e) {
-        console.error('Failed to parse userInfo:', e);
-      }
+    if (this.cachedUserInfo) {
+      return this.cachedUserInfo;
     }
-    return null;
+
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    try {
+      const userInfoStr = localStorage.getItem('userInfo');
+      if (!userInfoStr) {
+        return null;
+      }
+
+      this.cachedUserInfo = JSON.parse(userInfoStr) as UserInfo;
+      return this.cachedUserInfo;
+    } catch (error) {
+      console.error('[WebAdapter] Failed to parse userInfo:', error);
+      return null;
+    }
   }
 
   public override getStorage(key: string): string | null {
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
     try {
-      const value = localStorage.getItem(key);
-      return value;
-    } catch (e) {
-      console.error('[WebAdapter] getStorage error:', e);
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('[WebAdapter] getStorage error:', error);
       return null;
     }
   }
 
   public override setStorage(key: string, value: string): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
     try {
       localStorage.setItem(key, value);
-    } catch (e) {
-      console.error('[WebAdapter] setStorage error:', e);
+    } catch (error) {
+      console.error('[WebAdapter] setStorage error:', error);
     }
   }
 
   public override requestAnimationFrame(callback: () => void): void {
-    // 浏览器原生支持requestAnimationFrame
-    if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(callback);
-    } else {
-      // 降级到setTimeout
-      setTimeout(callback, 16);
+    const raf = typeof globalThis !== 'undefined' ? globalThis.requestAnimationFrame : undefined;
+    if (typeof raf === 'function') {
+      raf.call(globalThis, callback);
+      return;
     }
+
+    setTimeout(callback, 16);
   }
 }

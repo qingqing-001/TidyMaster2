@@ -3,8 +3,19 @@
   "version": "1.0.0",
   "description": "TidyMaster - 微信小游戏收纳整理游戏",
   "scripts": {
-    "build": "tsc --noEmit",
-    "type-check": "tsc --noEmit"
+    "build": "npm run type-check",
+    "type-check": "tsc --noEmit",
+    "verify:main-loop": "npx tsc -p scripts/tsconfig.verify-main-loop.json && node .tmp/verify-main-loop/scripts/verify-main-loop.js",
+    "archive:verify:chapter4": "npx tsc scripts/verify-chapter4-levels.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-chapter4 && node .tmp/verify-chapter4/scripts/verify-chapter4-levels.js",
+    "archive:verify:chapter5": "npx tsc scripts/verify-chapter5-levels.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-chapter5 && node .tmp/verify-chapter5/scripts/verify-chapter5-levels.js",
+    "archive:verify:chapter6": "npx tsc scripts/verify-chapter6-levels.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-chapter6 && node .tmp/verify-chapter6/scripts/verify-chapter6-levels.js",
+    "archive:verify:level-counts": "npx tsc scripts/verify-level-counts.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-level-counts && node .tmp/verify-level-counts/scripts/verify-level-counts.js",
+    "archive:verify:runtime-access": "npx tsc scripts/verify-runtime-access.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-runtime-access && node .tmp/verify-runtime-access/scripts/verify-runtime-access.js",
+    "archive:verify:level-progression": "npx tsc scripts/verify-level-progression.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-level-progression && node .tmp/verify-level-progression/scripts/verify-level-progression.js",
+    "archive:verify:demo": "node scripts/verify-demo.js",
+    "archive:verify:init": "node scripts/verify-init.js",
+    "archive:verify:level-system": "node scripts/verify-level-system.js",
+    "archive:verify:milestone": "node verify-milestone.js"
   },
   "dependencies": {},
   "devDependencies": {

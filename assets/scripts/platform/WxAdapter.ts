@@ -1,24 +1,47 @@
-import { PlatformAdapter, UserInfo } from './PlatformAdapter';
+import { PlatformAdapter, SystemInfo, UserInfo } from './PlatformAdapter';
+
+interface WxLoginSuccessResult {
+  code?: string;
+}
+
+interface WxGetUserInfoSuccessResult {
+  userInfo?: UserInfo;
+  nickName?: string;
+  avatarUrl?: string;
+  gender?: number;
+  city?: string;
+  province?: string;
+  country?: string;
+  language?: string;
+}
 
 declare const wx: {
-  getSystemInfoSync?: () => Record<string, unknown>;
+  getSystemInfoSync?: () => SystemInfo;
   vibrateShort?: () => void;
-  showToast?: (options: { title: string; duration?: number; icon?: string }) => void;
+  showToast?: (options: { title: string; duration?: number; icon?: 'none' | 'success' | 'error' }) => void;
   showLoading?: (options?: { title?: string; mask?: boolean }) => void;
   hideLoading?: () => void;
-  shareAppMessage?: (callback: () => { title: string; imageUrl?: string; path?: string }) => void;
-  login?: (callback: { success: (res: { code: string }) => void; fail?: () => void }) => void;
-  getUserInfo?: (callback: { success: (res: UserInfo) => void; fail?: () => void }) => void;
+  shareAppMessage?: (options: { title: string; imageUrl?: string; path?: string }) => void;
+  login?: (options: {
+    success?: (res: WxLoginSuccessResult) => void;
+    fail?: (error?: unknown) => void;
+  }) => void;
+  getUserInfo?: (options: {
+    success?: (res: WxGetUserInfoSuccessResult) => void;
+    fail?: (error?: unknown) => void;
+  }) => void;
   getStorageSync?: (key: string) => string | undefined;
   setStorageSync?: (key: string, value: string) => void;
 } | undefined;
 
 export class WxAdapter extends PlatformAdapter {
+  private cachedUserInfo: UserInfo | null = null;
+
   public override isWechat(): boolean {
     return typeof wx !== 'undefined';
   }
 
-  public override getSystemInfo(): Record<string, unknown> | null {
+  public override getSystemInfo(): SystemInfo | null {
     if (!this.isWechat() || typeof wx?.getSystemInfoSync !== 'function') {
       return null;
     }
@@ -39,120 +62,130 @@ export class WxAdapter extends PlatformAdapter {
         duration: 2000,
         icon: 'none',
       });
-    } else {
-      super.showToast(message);
+      return;
     }
+
+    console.log('[WxAdapter] showToast fallback:', message);
   }
 
-  public override showLoading(title?: string): void {
+  public override showLoading(title = '加载中...'): void {
     if (this.isWechat() && typeof wx?.showLoading === 'function') {
       wx.showLoading({
-        title: title || '加载中...',
+        title,
         mask: true,
       });
-    } else {
-      super.showLoading(title);
+      return;
     }
+
+    console.log('[WxAdapter] showLoading fallback:', title);
   }
 
   public override hideLoading(): void {
     if (this.isWechat() && typeof wx?.hideLoading === 'function') {
       wx.hideLoading();
-    } else {
-      super.hideLoading();
+      return;
     }
+
+    console.log('[WxAdapter] hideLoading fallback');
   }
 
   public override share(title: string, imageUrl: string): void {
     if (this.isWechat() && typeof wx?.shareAppMessage === 'function') {
-      wx.shareAppMessage(() => ({
+      wx.shareAppMessage({
         title,
         imageUrl,
         path: '/pages/index/index',
-      }));
-    } else {
-      super.share(title, imageUrl);
+      });
+      return;
     }
+
+    console.log('[WxAdapter] share fallback:', title, imageUrl);
   }
 
   public override async login(): Promise<UserInfo> {
-    if (this.isWechat() && typeof wx?.login === 'function') {
-      return new Promise((resolve, reject) => {
-        wx.login!({
-          success: () => {
-            // 登录成功后获取用户信息
-            if (typeof wx?.getUserInfo === 'function') {
-              wx.getUserInfo!({
-                success: (res: UserInfo) => {
-                  resolve(res);
-                },
-                fail: () => {
-                  resolve({});
-                },
-              });
-            } else {
-              resolve({});
-            }
-          },
-          fail: () => {
-            reject(new Error('Login failed'));
-          },
-        });
-      });
-    } else {
-      return super.login();
+    if (!this.isWechat() || typeof wx?.login !== 'function') {
+      return {};
     }
+
+    return new Promise((resolve, reject) => {
+      wx.login?.({
+        success: () => {
+          if (typeof wx?.getUserInfo !== 'function') {
+            resolve(this.cachedUserInfo ?? {});
+            return;
+          }
+
+          wx.getUserInfo({
+            success: (res) => {
+              const userInfo = this.normalizeUserInfo(res);
+              this.cachedUserInfo = userInfo;
+              resolve(userInfo);
+            },
+            fail: () => {
+              resolve(this.cachedUserInfo ?? {});
+            },
+          });
+        },
+        fail: (error) => {
+          reject(error instanceof Error ? error : new Error('WeChat login failed'));
+        },
+      });
+    });
   }
 
   public override getUserInfo(): UserInfo | null {
-    if (this.isWechat() && typeof wx?.getUserInfo === 'function') {
-      let userInfo: UserInfo | null = null;
-      wx.getUserInfo!({
-        success: (res: UserInfo) => {
-          userInfo = res;
-        },
-        fail: () => {
-          userInfo = null;
-        },
-      });
-      return userInfo;
-    } else {
-      return super.getUserInfo();
-    }
+    return this.cachedUserInfo;
   }
 
   public override getStorage(key: string): string | null {
-    if (this.isWechat() && typeof wx?.getStorageSync === 'function') {
-      try {
-        const value = wx.getStorageSync(key);
-        return value !== undefined ? value : null;
-      } catch (e) {
-        console.error('[WxAdapter] getStorage error:', e);
-        return null;
-      }
-    } else {
-      return super.getStorage(key);
+    if (!this.isWechat() || typeof wx?.getStorageSync !== 'function') {
+      return null;
+    }
+
+    try {
+      const value = wx.getStorageSync(key);
+      return value ?? null;
+    } catch (error) {
+      console.error('[WxAdapter] getStorage error:', error);
+      return null;
     }
   }
 
   public override setStorage(key: string, value: string): void {
-    if (this.isWechat() && typeof wx?.setStorageSync === 'function') {
-      try {
-        wx.setStorageSync(key, value);
-      } catch (e) {
-        console.error('[WxAdapter] setStorage error:', e);
-      }
-    } else {
-      super.setStorage(key, value);
+    if (!this.isWechat() || typeof wx?.setStorageSync !== 'function') {
+      return;
+    }
+
+    try {
+      wx.setStorageSync(key, value);
+    } catch (error) {
+      console.error('[WxAdapter] setStorage error:', error);
     }
   }
 
   public override requestAnimationFrame(callback: () => void): void {
-    // 微信小游戏也支持requestAnimationFrame
-    if (typeof requestAnimationFrame !== 'undefined') {
-      requestAnimationFrame(callback);
-    } else {
-      super.requestAnimationFrame(callback);
+    const raf = typeof globalThis !== 'undefined' ? globalThis.requestAnimationFrame : undefined;
+    if (typeof raf === 'function') {
+      raf.call(globalThis, callback);
+      return;
     }
+
+    super.requestAnimationFrame(callback);
+  }
+
+  private normalizeUserInfo(res: WxGetUserInfoSuccessResult): UserInfo {
+    if (res.userInfo) {
+      return res.userInfo;
+    }
+
+    return {
+      nickName: res.nickName,
+      avatarUrl: res.avatarUrl,
+      gender: res.gender,
+      city: res.city,
+      province: res.province,
+      country: res.country,
+      language: res.language,
+    };
   }
 }

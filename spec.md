@@ -1,5 +1,7 @@
 # Project Specification
 
+> 边界说明：`spec.md` 主要描述《整理大师》的目标态设计与理想产品规格，不等同于当前仓库已经完成或已正式验收的实现范围。就本仓库当前可直接复核的正式结论而言，仅能以 `npm run verify:main-loop` 证明最小主循环闭环（真实第1关开始、完成、结算、回到 Home、进入下一关）。文中其余章节如描述玩法、商业化、社交、真机、完整内容体量等，默认应理解为设计目标或历史实现背景，而非当前一并通过验收的事实。
+
 ## What do you want to build?
 
 # CLAUDE.md — 微信小游戏《整理大师》(TidyMaster) 完整开发规范
@@ -922,7 +924,9 @@ async loadLevel(levelId: number): Promise<LevelConfig> {
 ## How do you consider the project is success?
 
 开发一款完整可运行的微信小游戏《整理大师》（TidyMaster）。这是一款 ASMR 解压整理 + 合成进化 + 收集养成的休闲小游戏。玩家在混乱场景中拖拽物品到正确位置，获得 ASMR 满足感反馈。通过激励视频广告变现。
-成功标准
+成功标准（目标态设计，非当前正式整体验收清单）
+
+若讨论“当前仓库已可直接复核的正式验收范围”，请仅以 `npm run verify:main-loop` 覆盖的最小主循环闭环为准，而不要直接把以下目标态条目视为现阶段均已完成：
 
 在微信开发者工具中能完整运行，无报错
 包含至少 30 个可玩关卡（3章 x 10关），难度递进

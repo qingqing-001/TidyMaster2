@@ -3,15 +3,65 @@
 
 declare module 'cc' {
   // 基础类型
-  export type Vec2 = { x: number, y: number };
-  export type Vec3 = { x: number, y: number, z: number };
-  export type Color = { r: number, g: number, b: number, a: number };
+  export class Vec2 {
+    x: number;
+    y: number;
+    constructor(x?: number, y?: number);
+    clone(): Vec2;
+  }
+  export class Vec3 {
+    x: number;
+    y: number;
+    z: number;
+    constructor(x?: number, y?: number, z?: number);
+    static distance(a: Vec3, b: Vec3): number;
+    static subtract(out: Vec3, a: Vec3, b: Vec3): Vec3;
+    static add(out: Vec3, a: Vec3, b: Vec3): Vec3;
+    clone(): Vec3;
+  }
+  export class Color {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    constructor(r?: number, g?: number, b?: number, a?: number);
+    clone(): Color;
+  }
   export type Size = { width: number, height: number };
+
+  export type CCInteger = number;
+  export type CCFloat = number;
+  export type CCBoolean = boolean;
+  export type CCString = string;
+  export type PropertyType = Function | (new (...args: any[]) => any) | Array<Function | (new (...args: any[]) => any)>;
+  export interface PropertyOptions {
+    type?: PropertyType;
+    visible?: boolean;
+    displayName?: string;
+    tooltip?: string;
+    readonly?: boolean;
+    min?: number;
+    max?: number;
+    step?: number;
+    multiline?: boolean;
+    serializable?: boolean;
+    override?: boolean;
+    formerlySerializedAs?: string;
+    editorOnly?: boolean;
+    [key: string]: any;
+  }
+
+  export type PropertyDecoratorFactory = {
+    (target: object, propertyKey: string | symbol): void;
+    (): PropertyDecorator;
+    (type?: PropertyType): PropertyDecorator;
+    (options?: PropertyOptions): PropertyDecorator;
+  };
 
   // // _decorator
   export const _decorator: {
     ccclass: (name: string) => ClassDecorator;
-    property: any;
+    property: PropertyDecoratorFactory;
     executeInEditMode: ClassDecorator;
     menu: ClassDecorator;
     help: ClassDecorator;
@@ -24,7 +74,7 @@ declare module 'cc' {
   export const ccclass: (name: string) => ClassDecorator;
 
   // property装饰器 - 支持多种调用方式
-  export const property: any;
+  export const property: PropertyDecoratorFactory;
 
   export const executeInEditMode: ClassDecorator;
   export const menu: ClassDecorator;
@@ -83,7 +133,25 @@ declare module 'cc' {
     worldPosition: Vec3;
     scale: Vec3;
     rotation: any;
+    layer: number;
+    angle: number;
+    constructor(name?: string);
 
+    // 事件类型 - 作为实例属性和命名空间
+    readonly EventType: {
+      TOUCH_START: string;
+      TOUCH_MOVE: string;
+      TOUCH_END: string;
+      TOUCH_CANCEL: string;
+      MOUSE_DOWN: string;
+      MOUSE_MOVE: string;
+      MOUSE_UP: string;
+      MOUSE_LEAVE: string;
+      MOUSE_ENTER: string;
+      MOUSE_WHEEL: string;
+    };
+
+    // 静态事件类型
     static readonly EventType: {
       TOUCH_START: string;
       TOUCH_MOVE: string;
@@ -106,15 +174,20 @@ declare module 'cc' {
     removeChild(child: Node): void;
     removeAllChildren(): void;
     setParent(parent: Node | null, keepWorldTransform?: boolean): void;
-    getComponent<T extends Component>(type: Function): T | null;
-    addComponent<T extends Component>(type: Function): T;
+    getSiblingIndex(): number;
+    setSiblingIndex(index: number): void;
+    getComponent<T extends Component>(type: new (...args: any[]) => T): T | null;
+    addComponent<T extends Component>(type: new (...args: any[]) => T): T;
     destroy(): void;
     isValid: boolean;
+    setAnchorPoint(x: number | Vec2, y?: number): void;
+    getAnchorPoint(): Vec2;
+    clone(): Node;
 
-    // 事件
-    on(type: string, callback: Function, target?: any, useCapture?: boolean): void;
-    off(type: string, callback?: Function, target?: any): void;
-    once(type: string, callback: Function, target?: any): void;
+    // 事件 - 支持字符串和EventType
+    on(type: string | Node['EventType'], callback: Function, target?: any, useCapture?: boolean): void;
+    off(type: string | Node['EventType'], callback?: Function, target?: any): void;
+    once(type: string | Node['EventType'], callback: Function, target?: any): void;
     emit(type: string, ...args: any[]): void;
     targetOff(target: any): void;
   }
@@ -125,7 +198,14 @@ declare module 'cc' {
     color: Color;
     sizeMode: number;
     customSize: Size;
-    static readonlySizeMode: any;
+    grayscale: boolean;
+    trim: boolean;
+    type: number;
+    static readonly SizeMode: {
+      CUSTOM: number;
+      RAW: number;
+      TRIMMED: number;
+    };
   }
 
   // SpriteFrame 资源
@@ -203,15 +283,51 @@ declare module 'cc' {
     duration: number;
   }
 
+  // SceneAsset 场景资源
+  export class SceneAsset extends Asset {
+    scene: Scene;
+  }
+
+  // Graphics 图形绘制组件
+  export class Graphics extends Component {
+    fillColor: Color;
+    strokeColor: Color;
+    lineWidth: number;
+    lineJoin: number;
+    lineCap: number;
+    miterLimit: number;
+    fillRect(x: number, y: number, w: number, h: number): void;
+    rect(x: number, y: number, w: number, h: number): void;
+    clear(): void;
+    close(): void;
+    moveTo(x: number, y: number): void;
+    lineTo(x: number, y: number): void;
+    arc(cx: number, cy: number, r: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void;
+    ellipse(cx: number, cy: number, rx: number, ry: number, rotation?: number, startAngle?: number, endAngle?: number, counterclockwise?: boolean): void;
+    roundRect(x: number, y: number, w: number, h: number, r?: number): void;
+    stroke(): void;
+    fill(): void;
+  }
+
+  // view 模块
+  export const view: {
+    getVisibleSize(): Size;
+    getVisibleSizeInPixel(): Size;
+    getDesignResolutionSize(): Size;
+    getDevicePixelRatio(): number;
+    setDesignResolutionSize(width: number, height: number, resolutionPolicy: number): void;
+    setOrientation(orientation: number): void;
+  };
+
   // director 全局单例
   export class director {
     static getScene(): Scene | null;
-    static loadScene(name: string, onLaunched?: Function): void;
+    static loadScene(name: string, onLaunched?: (err: Error | null) => void, onProgress?: (progress: number, total: number, item: any) => void): void;
     static preloadScene(name: string, onLoaded?: Function): void;
   }
 
   // Scene 类
-  export class Scene {
+  export class Scene extends Node {
     name: string;
     readonly uuid: string;
     getComponentInChildren<T extends Component>(type: Function): T | null;
@@ -306,17 +422,6 @@ declare module 'cc' {
   // 实例化函数
   export function instantiate(original: Node): Node;
 
-  // Vec3 静态方法
-  export class Vec3 {
-    x: number;
-    y: number;
-    z: number;
-    static distance(a: Vec3, b: Vec3): number;
-    static subtract(out: Vec3, a: Vec3, b: Vec3): Vec3;
-    static add(out: Vec3, a: Vec3, b: Vec3): Vec3;
-    clone(): Vec3;
-  }
-
   // 键盘事件
   export class KeyCode {
     static readonly KEY_UP: number;
@@ -337,6 +442,28 @@ declare module 'cc' {
     anchorX: number;
     anchorY: number;
     priority: number;
+    setContentSize(size: Size): void;
+    setContentSize(width: number, height: number): void;
+  }
+
+  // 扩展 SpriteFrame 类型
+  export interface SpriteFrame extends Asset {
+    originalSize: Size;
+    rect: any;
+    insetTop: number;
+    insetBottom: number;
+    insetLeft: number;
+    insetRight: number;
+  }
+
+  export class UIOpacity extends Component {
+    opacity: number;
+  }
+
+  export namespace Layers {
+    const Enum: {
+      UI_2D: number;
+    };
   }
 
   export class Layout extends Component {
