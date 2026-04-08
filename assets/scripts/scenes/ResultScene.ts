@@ -1,6 +1,10 @@
 import { _decorator, Component, Node, Label, Sprite } from 'cc';
 import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../../data/constants';
+import { AlbumManager } from '../collection/AlbumManager';
+import { AchievementManager } from '../collection/AchievementManager';
+import { SeasonPass } from '../collection/SeasonPass';
+import { AchievementType } from '../../data/AchievementData';
 
 const { ccclass, property } = _decorator;
 
@@ -106,6 +110,123 @@ export class ResultScene extends Component {
 
         // 播放成功音效（如果有AudioManager）
         this.playSuccessSound();
+
+        // 集成收集和养成系统
+        this.integrateCollectionAndProgression(payload);
+    }
+
+    /**
+     * 集成收集和养成系统
+     * 在关卡完成后调用图鉴、成就、赛季通行证等系统
+     */
+    private integrateCollectionAndProgression(payload: LevelCompletePayload): void {
+        const levelId = payload.levelId || this._lastLevelId;
+        const stars = payload.stars || this._lastStars;
+
+        // 1. 收集物品到图鉴 (基于关卡ID生成物品ID)
+        if (levelId) {
+            this.collectItemsToAlbum(levelId);
+        }
+
+        // 2. 触发成就检查
+        this.checkAchievements(levelId, stars);
+
+        // 3. 赛季通行证增加经验
+        this.addSeasonPassExp(stars);
+    }
+
+    /**
+     * 收集物品到图鉴
+     * 根据关卡收集对应的物品
+     */
+    private collectItemsToAlbum(levelId: number | string | undefined): void {
+        try {
+            const albumManager = AlbumManager.instance;
+            
+            // 根据关卡ID生成物品ID (示例：level-1 -> item_furniture_1, item_stationery_1)
+            const levelNum = typeof levelId === 'string' ? parseInt(levelId.replace('level-', '')) || 1 : (levelId || 1);
+            
+            // 为每个关卡生成几个物品ID
+            const itemIds: string[] = [];
+            
+            // 根据关卡类型添加不同物品
+            if (levelNum <= 5) {
+                // 教学关：基础物品
+                itemIds.push('item_stationery_pen');
+                itemIds.push('item_stationery_notebook');
+            } else if (levelNum <= 15) {
+                // 中期关：厨具和衣物
+                itemIds.push('item_kitchen_plate');
+                itemIds.push('item_kitchen_cup');
+                itemIds.push('item_clothes_shirt');
+            } else if (levelNum <= 25) {
+                // 后期关：浴室用品和更多家具
+                itemIds.push('item_bathroom_towel');
+                itemIds.push('item_bathroom_toothbrush');
+                itemIds.push('item_furniture_chair');
+            } else {
+                // 高级关：复杂物品
+                itemIds.push('item_furniture_table');
+                itemIds.push('item_furniture_lamp');
+                itemIds.push('item_decoration_vase');
+            }
+
+            // 调用图鉴管理器收集物品
+            const newCount = albumManager.collectItems(itemIds);
+            console.log(`[ResultScene] 图鉴收集了新 ${newCount} 个物品`);
+
+        } catch (e) {
+            console.error('[ResultScene] 图鉴收集失败:', e);
+        }
+    }
+
+    /**
+     * 检查成就
+     */
+    private checkAchievements(levelId: number | string | undefined, stars: number): void {
+        try {
+            const achievementManager = AchievementManager.instance;
+            const seasonPass = SeasonPass.instance;
+
+            // 获取当前的累计数据
+            const totalStars = seasonPass.getCurrentExp() + stars; // 使用经验作为星星计数
+            
+            // 1. 通关成就检查
+            const currentLevel = typeof levelId === 'string' ? parseInt(levelId.replace('level-', '')) || 1 : (levelId || 1);
+            achievementManager.triggerAchievementCheck(AchievementType.LEVEL_COUNT, currentLevel);
+
+            // 2. 整理物品成就 (每个关卡完成算整理了多个物品)
+            const totalItems = currentLevel * 5; // 简化计算
+            achievementManager.triggerAchievementCheck(AchievementType.TOTAL_ITEMS, totalItems);
+
+            // 3. 星星成就
+            achievementManager.triggerAchievementCheck(AchievementType.STAR_TOTAL, totalStars);
+
+            console.log(`[ResultScene] 成就检查完成，当前关卡: ${currentLevel}, 累计星星: ${totalStars}`);
+
+        } catch (e) {
+            console.error('[ResultScene] 成就检查失败:', e);
+        }
+    }
+
+    /**
+     * 增加赛季通行证经验
+     */
+    private addSeasonPassExp(stars: number): void {
+        try {
+            const seasonPass = SeasonPass.instance;
+            
+            // 根据星级给予经验奖励
+            // 1星=10经验，2星=20经验，3星=30经验
+            const expGain = stars * 10;
+            
+            seasonPass.addExp(expGain);
+            
+            console.log(`[ResultScene] 赛季通行证获得 ${expGain} 经验`);
+
+        } catch (e) {
+            console.error('[ResultScene] 赛季通行证经验增加失败:', e);
+        }
     }
 
     /**

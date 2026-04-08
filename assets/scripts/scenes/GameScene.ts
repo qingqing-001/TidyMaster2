@@ -13,6 +13,9 @@ import { OperationType } from '../data/LevelData';
 import { WipeHandler } from '../gameplay/WipeHandler';
 import { FoldHandler } from '../gameplay/FoldHandler';
 import { MergeLogic } from '../merge/MergeLogic';
+import { AlbumManager } from '../collection/AlbumManager';
+import { AchievementManager } from '../collection/AchievementManager';
+import { AchievementType } from '../../data/AchievementData';
 
 const { ccclass, property } = _decorator;
 
@@ -357,8 +360,32 @@ export class GameScene extends Component {
         this.activeOperationProgress.delete(data.itemId);
         this.updateProgressDisplay();
 
+        // 收集物品到图鉴
+        this.collectItemOnPlace(data.itemId);
+
         if (this.levelManager.isLevelComplete()) {
             this.onLevelComplete(3);
+        }
+    }
+
+    /**
+     * 物品放置时收集到图鉴
+     */
+    private collectItemOnPlace(itemId: string): void {
+        try {
+            const albumManager = AlbumManager.instance;
+            // 将物品ID添加到图鉴
+            albumManager.collectItem(itemId);
+
+            // 触发整理物品成就
+            const achievementManager = AchievementManager.instance;
+            // 获取当前已整理的物品总数
+            const placedCount = this.levelManager.getPlacedCount();
+            achievementManager.triggerAchievementCheck(AchievementType.TOTAL_ITEMS, placedCount);
+
+            console.log(`[GameScene] 物品已收集到图鉴: ${itemId}`);
+        } catch (e) {
+            console.error('[GameScene] 收集物品到图鉴失败:', e);
         }
     }
 
