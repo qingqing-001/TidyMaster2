@@ -2,7 +2,7 @@ import { _decorator, Component, EventTouch, Node, Vec3, Sprite, tween, v3, UITra
 import { EventManager } from '../core/EventManager';
 import { AudioManager } from '../audio/AudioManager';
 import { ParticleEffects } from '../effects/ParticleEffects';
-import { GAME_EVENTS } from '../data/constants';
+import { GAME_EVENTS } from '../../data/constants';
 
 const { ccclass, property } = _decorator;
 
