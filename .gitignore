@@ -50,3 +50,7 @@ tmp/
 # 通用补丁/冲突残留
 *.orig
 *.rej
+# Agent workspace / local notes
+/workspace/
+/n/
+/note.md
