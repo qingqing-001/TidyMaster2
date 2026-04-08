@@ -2,6 +2,7 @@ import { _decorator, Component, EventTouch, Node, Vec3, Sprite, tween, v3, UITra
 import { EventManager } from '../core/EventManager';
 import { AudioManager } from '../audio/AudioManager';
 import { ParticleEffects } from '../effects/ParticleEffects';
+import { GAME_EVENTS } from '../data/constants';
 
 const { ccclass, property } = _decorator;
 
@@ -9,6 +10,7 @@ interface WipeMetadata {
     levelId?: number;
     itemId?: string;
     slotId?: string;
+    operation?: string;
     targetLabel?: string;
     requiredDistance?: number;
     wipeThreshold?: number;
@@ -196,7 +198,7 @@ export class WipeHandler extends Component {
     }
 
     private _triggerItemComplete(): void {
-        this._eventManager?.emit('item-wiped', {
+        this._eventManager?.emit(GAME_EVENTS.OPERATION_COMPLETE, {
             ...this._metadata,
             node: this.wipeTarget,
             progress: this._wipeProgress,
@@ -204,7 +206,7 @@ export class WipeHandler extends Component {
     }
 
     private _emitProgress(completed = false): void {
-        this._eventManager?.emit('wipe-progress', {
+        this._eventManager?.emit(GAME_EVENTS.OPERATION_PROGRESS, {
             ...this._metadata,
             progress: this._wipeProgress,
             completed,

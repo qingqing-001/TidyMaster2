@@ -62,10 +62,14 @@ export class GameManager extends Component {
     this.audioManager.setEnabled(progress.soundEnabled);
     this.levelManager.loadLevel({
       id: progress.currentLevelId || '1',
+      levelId: Number(progress.currentLevelId || 1),
+      chapter: 1,
       name: 'Default Level',
+      sceneName: 'default',
       items: [],
       slots: [],
       requiredItems: 3,
+      operations: [],
     });
     this.eventManager.emit(GAME_EVENTS.GAME_INIT, {
       platform: this.platformAdapter.isWechat() ? 'wechat' : 'default',

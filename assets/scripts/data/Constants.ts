@@ -47,6 +47,8 @@ export const GAME_EVENTS = {
     ITEM_PLACED: 'item:placed',
     ITEM_REMOVED: 'item:removed',
     ITEM_WRONG_DROP: 'item:wrong_drop',
+    OPERATION_PROGRESS: 'operation:progress',
+    OPERATION_COMPLETE: 'operation:complete',
     TIMER_TICK: 'timer:tick',
     TIMER_COMPLETE: 'timer:complete',
     SETTINGS_CHANGED: 'settings:changed',

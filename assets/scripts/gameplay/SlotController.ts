@@ -1,5 +1,5 @@
 import { _decorator, Component, Node, Vec3, UITransform, Sprite, v3, Color, UIOpacity, tween } from 'cc';
-import { GAME_CONFIG } from '../../data/Constants';
+import { GAME_CONFIG } from '../data/constants';
 
 const { ccclass, property } = _decorator;
 
@@ -18,6 +18,10 @@ export class SlotController extends Component {
 
   onLoad(): void {
     this.createHighlightNode();
+  }
+
+  public setAllowedItemTypes(types: string[]): void {
+    this.allowedItemTypes = [...types];
   }
 
   private createHighlightNode(): void {
@@ -111,12 +115,11 @@ export class SlotController extends Component {
   }
 
   public addItem(itemId: string): boolean {
-    // 检查重复添加
     if (this.itemIds.includes(itemId)) {
       return false;
     }
 
-    if (this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY) {
+    if (this.itemIds.length >= GAME_CONFIG.level.maxStarsPerLevel) {
       return false;
     }
 
@@ -147,7 +150,7 @@ export class SlotController extends Component {
   }
 
   public isFull(): boolean {
-    return this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY;
+    return this.itemIds.length >= GAME_CONFIG.level.maxStarsPerLevel;
   }
 
   public isEmpty(): boolean {

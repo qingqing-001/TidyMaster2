@@ -2,7 +2,7 @@ import { _decorator, Component, Node, instantiate, Sprite, UITransform, Label, C
 import { LevelManager, LevelDefinition, ItemConfig, SlotConfig } from '../gameplay/LevelManager';
 import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../data/constants';
-import { ItemController } from '../gameplay/ItemController';
+import { ItemController, ItemState } from '../gameplay/ItemController';
 import { DragHandler } from '../gameplay/DragHandler';
 import { SlotController } from '../gameplay/SlotController';
 import { TimerController } from '../gameplay/TimerController';
@@ -11,22 +11,25 @@ import { getLevelConfig } from '../data/levels';
 import { LevelDataConfig, LevelItemConfig, LevelSlotConfig } from '../data/types';
 import { OperationType } from '../data/LevelData';
 import { WipeHandler } from '../gameplay/WipeHandler';
+import { FoldHandler } from '../gameplay/FoldHandler';
 
 const { ccclass, property } = _decorator;
 
-interface WipeProgressPayload {
+interface OperationProgressPayload {
     levelId?: number;
     itemId?: string;
     slotId?: string;
+    operation?: OperationType;
     progress: number;
     completed: boolean;
 }
 
-interface WipeCompletePayload {
+interface OperationCompletePayload {
     levelId?: number;
     itemId?: string;
     slotId?: string;
-    progress: number;
+    operation?: OperationType;
+    progress?: number;
 }
 
 @ccclass('GameScene')
@@ -55,11 +58,12 @@ export class GameScene extends Component {
     private levelManager = new LevelManager();
     private eventManager = EventManager.getInstance();
     private audioManager = AudioManager.getInstance();
-    private currentLevelId = 1;
+    private currentLevelId = 4;
     private currentLevelConfig: LevelDataConfig | null = null;
-    private wipeItemMap = new Map<string, LevelItemConfig>();
-    private wipeSlotMap = new Map<string, LevelSlotConfig>();
-    private completedWipeItems = new Set<string>();
+    private operationItemMap = new Map<string, LevelItemConfig>();
+    private operationSlotMap = new Map<string, LevelSlotConfig>();
+    private completedOperationItems = new Set<string>();
+    private activeOperationProgress = new Map<string, number>();
     private levelCompleted = false;
 
     onLoad() {
@@ -78,28 +82,12 @@ export class GameScene extends Component {
         this.currentLevelId = levelId;
         this.currentLevelConfig = levelConfig;
         this.levelCompleted = false;
-        this.setupWipeTargets(levelConfig);
-        this.completedWipeItems.clear();
+        this.setupOperationTargets(levelConfig);
+        this.completedOperationItems.clear();
+        this.activeOperationProgress.clear();
         this.clearLevelNodes();
 
-        const levelDefinition: LevelDefinition = {
-            id: `level_${levelId}`,
-            name: levelConfig.sceneDisplayName,
-            items: levelConfig.items.map((item) => ({
-                id: item.id,
-                type: item.type,
-                position: item.initialPos,
-            })),
-            slots: levelConfig.slots.map((slot) => ({
-                id: slot.id,
-                allowedItemTypes: slot.acceptTypes,
-                position: slot.pos,
-            })),
-            requiredItems: levelConfig.items.length,
-            timeLimit: levelConfig.timeLimit > 0 ? levelConfig.timeLimit : undefined,
-        };
-
-        this.levelManager.loadLevel(levelDefinition);
+        const levelDefinition = this.levelManager.loadFromConfig(levelConfig);
         this.instantiateLevelObjects(levelDefinition);
         this.updateProgressDisplay();
 
@@ -122,30 +110,28 @@ export class GameScene extends Component {
     private registerEvents(): void {
         this.eventManager.on(GAME_EVENTS.ITEM_PLACED, this.handleItemPlaced as any);
         this.eventManager.on(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
-        this.eventManager.on('wipe-progress', this.handleWipeProgress as any);
-        this.eventManager.on('item-wiped', this.handleItemWiped as any);
+        this.eventManager.on(GAME_EVENTS.OPERATION_PROGRESS, this.handleOperationProgress as any);
+        this.eventManager.on(GAME_EVENTS.OPERATION_COMPLETE, this.handleOperationComplete as any);
     }
 
     private unregisterEvents(): void {
         this.eventManager.off(GAME_EVENTS.ITEM_PLACED, this.handleItemPlaced as any);
         this.eventManager.off(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
-        this.eventManager.off('wipe-progress', this.handleWipeProgress as any);
-        this.eventManager.off('item-wiped', this.handleItemWiped as any);
+        this.eventManager.off(GAME_EVENTS.OPERATION_PROGRESS, this.handleOperationProgress as any);
+        this.eventManager.off(GAME_EVENTS.OPERATION_COMPLETE, this.handleOperationComplete as any);
     }
 
-    private setupWipeTargets(levelConfig: LevelDataConfig): void {
-        this.wipeItemMap.clear();
-        this.wipeSlotMap.clear();
+    private setupOperationTargets(levelConfig: LevelDataConfig): void {
+        this.operationItemMap.clear();
+        this.operationSlotMap.clear();
 
-        levelConfig.items
-            .filter((item) => item.operation === OperationType.WIPE)
-            .forEach((item) => {
-                this.wipeItemMap.set(item.id, item);
-                const slot = levelConfig.slots.find((candidate) => candidate.id === item.targetSlotId);
-                if (slot) {
-                    this.wipeSlotMap.set(item.id, slot);
-                }
-            });
+        levelConfig.items.forEach((item) => {
+            this.operationItemMap.set(item.id, item);
+            const slot = levelConfig.slots.find((candidate) => candidate.id === item.targetSlotId);
+            if (slot) {
+                this.operationSlotMap.set(item.id, slot);
+            }
+        });
     }
 
     private clearLevelNodes(): void {
@@ -171,12 +157,12 @@ export class GameScene extends Component {
         const slotController = slotNode.getComponent(SlotController);
         if (slotController) {
             slotController.slotId = config.id;
-            slotController['allowedItemTypes'] = config.allowedItemTypes;
+            slotController.setAllowedItemTypes(config.allowedItemTypes);
         }
 
         const transform = slotNode.getComponent(UITransform);
         if (transform) {
-            const slotData = this.currentLevelConfig?.slots.find((slot) => slot.id === config.id);
+            const slotData = this.levelManager.getSlotConfig(config.id);
             transform.setContentSize({
                 width: slotData?.size.w ?? 100,
                 height: slotData?.size.h ?? 100,
@@ -185,7 +171,8 @@ export class GameScene extends Component {
 
         const sprite = slotNode.getComponent(Sprite);
         if (sprite) {
-            sprite.color = new Color(180, 180, 180, this.isWipeSlot(config.id) ? 150 : 255);
+            const hasOperationTarget = Array.from(this.operationSlotMap.values()).some((slot) => slot.id === config.id);
+            sprite.color = new Color(180, 180, 180, hasOperationTarget ? 150 : 255);
         }
     }
 
@@ -199,26 +186,16 @@ export class GameScene extends Component {
         itemNode.setParent(this.itemContainer);
         itemNode.setPosition(config.position.x, config.position.y, 0);
 
-        const itemController = itemNode.getComponent(ItemController);
-        if (itemController) {
-            itemController.setup(config.id, config.type);
-        }
+        const itemController = itemNode.getComponent(ItemController) ?? itemNode.addComponent(ItemController);
+        itemController.setup(config.id, config.type);
+        itemController.setOperation(config.operation, config.targetSlotId);
+        itemController.setState(ItemState.IDLE);
 
-        const levelItem = this.currentLevelConfig?.items.find((item) => item.id === config.id) ?? null;
-        const isWipeItem = levelItem?.operation === OperationType.WIPE;
-
-        if (isWipeItem) {
-            this.setupWipeItem(itemNode, levelItem!);
-        } else {
-            const dragHandler = itemNode.getComponent(DragHandler);
-            if (!dragHandler) {
-                itemNode.addComponent(DragHandler);
-            }
-        }
+        this.setupItemInteraction(itemNode, config.operation);
 
         const transform = itemNode.getComponent(UITransform);
         if (transform) {
-            const targetSlot = levelItem ? this.wipeSlotMap.get(levelItem.id) : null;
+            const targetSlot = this.levelManager.getSlotConfig(config.targetSlotId);
             transform.setContentSize({
                 width: targetSlot?.size.w ?? 80,
                 height: targetSlot?.size.h ?? 80,
@@ -227,27 +204,52 @@ export class GameScene extends Component {
 
         const sprite = itemNode.getComponent(Sprite);
         if (sprite) {
-            sprite.color = isWipeItem ? new Color(210, 170, 110, 255) : new Color(100, 200, 100, 255);
+            sprite.color = this.getItemColorByOperation(config.operation);
         }
     }
 
-    private setupWipeItem(itemNode: Node, levelItem: LevelItemConfig): void {
-        const wipeSlot = this.wipeSlotMap.get(levelItem.id);
+    private setupItemInteraction(itemNode: Node, operation: OperationType): void {
+        const dragHandler = itemNode.getComponent(DragHandler);
+        const wipeHandler = itemNode.getComponent(WipeHandler);
+        const foldHandler = itemNode.getComponent(FoldHandler);
+
+        dragHandler && (dragHandler.enabled = false);
+        wipeHandler && (wipeHandler.enabled = false);
+        foldHandler && (foldHandler.enabled = false);
+
+        switch (operation) {
+            case OperationType.WIPE:
+                this.setupWipeItem(itemNode);
+                break;
+            case OperationType.FOLD:
+                this.setupFoldItem(itemNode);
+                break;
+            case OperationType.DRAG:
+            default:
+                (dragHandler ?? itemNode.addComponent(DragHandler)).enabled = true;
+                break;
+        }
+    }
+
+    private setupWipeItem(itemNode: Node): void {
+        const itemController = itemNode.getComponent(ItemController);
+        const itemId = itemController?.itemId ?? '';
+        const wipeSlot = this.operationSlotMap.get(itemId);
         const requiredDistance = Math.max((wipeSlot?.size.w ?? 180) + (wipeSlot?.size.h ?? 120), 180);
-        const wipeThreshold = 100;
-        const wipeSpeed = 1;
         const wipeHandler = itemNode.getComponent(WipeHandler) ?? itemNode.addComponent(WipeHandler);
+        wipeHandler.enabled = true;
         wipeHandler.wipeTarget = itemNode;
-        wipeHandler.wipeThreshold = wipeThreshold;
-        wipeHandler.wipeSpeed = wipeSpeed;
+        wipeHandler.wipeThreshold = 100;
+        wipeHandler.wipeSpeed = 1;
         wipeHandler.setWipeMetadata({
             levelId: this.currentLevelId,
-            itemId: levelItem.id,
+            itemId,
             slotId: wipeSlot?.id,
+            operation: OperationType.WIPE,
             targetLabel: wipeSlot?.label,
             requiredDistance,
-            wipeThreshold,
-            wipeSpeed,
+            wipeThreshold: 100,
+            wipeSpeed: 1,
         });
 
         let stainNode = itemNode.getChildByName('StainOverlay');
@@ -274,17 +276,48 @@ export class GameScene extends Component {
         wipeHandler.reset();
     }
 
-    private isWipeSlot(slotId: string): boolean {
-        for (const slot of this.wipeSlotMap.values()) {
-            if (slot.id === slotId) {
-                return true;
-            }
+    private setupFoldItem(itemNode: Node): void {
+        const itemController = itemNode.getComponent(ItemController);
+        const itemId = itemController?.itemId ?? '';
+        const slot = this.operationSlotMap.get(itemId);
+        const foldHandler = itemNode.getComponent(FoldHandler) ?? itemNode.addComponent(FoldHandler);
+        foldHandler.enabled = true;
+        foldHandler.foldItem = itemNode;
+        foldHandler.totalFoldSteps = this.resolveFoldStepCount(slot);
+        foldHandler.setFoldMetadata({
+            levelId: this.currentLevelId,
+            itemId,
+            slotId: slot?.id,
+            operation: OperationType.FOLD,
+            targetLabel: slot?.label,
+        });
+        foldHandler.reset();
+    }
+
+    private resolveFoldStepCount(slot?: LevelSlotConfig): number {
+        const maxSize = Math.max(slot?.size.w ?? 90, slot?.size.h ?? 90);
+        if (maxSize >= 110) {
+            return 4;
         }
-        return false;
+        return 3;
+    }
+
+    private getItemColorByOperation(operation: OperationType): Color {
+        switch (operation) {
+            case OperationType.WIPE:
+                return new Color(210, 170, 110, 255);
+            case OperationType.FOLD:
+                return new Color(140, 190, 255, 255);
+            case OperationType.DRAG:
+            default:
+                return new Color(100, 200, 100, 255);
+        }
     }
 
     private handleItemPlaced(data: { itemId: string; slotId: string }): void {
         this.levelManager.markItemPlaced(data.itemId);
+        this.completedOperationItems.add(data.itemId);
+        this.activeOperationProgress.delete(data.itemId);
         this.updateProgressDisplay();
 
         if (this.levelManager.isLevelComplete()) {
@@ -294,57 +327,71 @@ export class GameScene extends Component {
 
     private handleItemRemoved(data: { itemId: string; slotId: string }): void {
         this.levelManager.removeItem(data.itemId);
-        this.completedWipeItems.delete(data.itemId);
+        this.completedOperationItems.delete(data.itemId);
+        this.activeOperationProgress.delete(data.itemId);
         this.updateProgressDisplay();
     }
 
-    private handleWipeProgress(data?: WipeProgressPayload): void {
-        if (!data || data.levelId !== this.currentLevelId || !this.progressLabel) {
-            return;
-        }
-
-        const total = this.levelManager.getCurrentLevel()?.requiredItems || 0;
-        const completed = this.levelManager.getPlacedCount();
-        this.progressLabel.string = `擦洗 ${Math.round(data.progress)}% · 完成 ${completed}/${total}`;
-    }
-
-    private handleItemWiped(data?: WipeCompletePayload): void {
+    private handleOperationProgress(data?: OperationProgressPayload): void {
         if (!data || data.levelId !== this.currentLevelId || !data.itemId) {
             return;
         }
 
-        this.completedWipeItems.add(data.itemId);
+        this.activeOperationProgress.set(data.itemId, data.progress);
+        if (data.completed) {
+            this.completedOperationItems.add(data.itemId);
+        }
+        this.updateProgressDisplay();
+    }
+
+    private handleOperationComplete(data?: OperationCompletePayload): void {
+        if (!data || data.levelId !== this.currentLevelId || !data.itemId) {
+            return;
+        }
+
+        this.completedOperationItems.add(data.itemId);
+        this.activeOperationProgress.delete(data.itemId);
         this.levelManager.markItemPlaced(data.itemId);
-        this.updateProgressDisplay(true, data.itemId);
+        this.updateProgressDisplay();
 
         if (this.levelManager.isLevelComplete()) {
             this.onLevelComplete(3);
         }
     }
 
-    private updateProgressDisplay(isWipeComplete = false, wipeItemId?: string): void {
+    private updateProgressDisplay(): void {
         if (!this.progressLabel) {
             return;
         }
 
         const placed = this.levelManager.getPlacedCount();
         const total = this.levelManager.getCurrentLevel()?.requiredItems || 0;
+        const activeText = this.buildActiveOperationText();
 
-        if (isWipeComplete && wipeItemId) {
-            this.progressLabel.string = `擦洗完成：${wipeItemId} · ${placed}/${total}`;
-            return;
-        }
+        this.progressLabel.string = activeText
+            ? `教学目标 ${placed}/${total} · ${activeText}`
+            : `${placed}/${total}`;
+    }
 
-        if (this.wipeItemMap.size > 0 && placed < total) {
-            this.progressLabel.string = `教学目标 ${placed}/${total} · 擦洗 ${this.completedWipeItems.size}/${this.wipeItemMap.size}`;
-            return;
-        }
-
-        this.progressLabel.string = `${placed}/${total}`;
+    private buildActiveOperationText(): string {
+        const entries: string[] = [];
+        this.activeOperationProgress.forEach((progress, itemId) => {
+            if (this.completedOperationItems.has(itemId)) {
+                return;
+            }
+            const itemConfig = this.levelManager.getItemConfig(itemId);
+            if (!itemConfig) {
+                return;
+            }
+            const label = itemConfig.operation === OperationType.WIPE ? '擦洗' : itemConfig.operation === OperationType.FOLD ? '折叠' : '操作';
+            entries.push(`${label}${Math.round(progress)}%`);
+        });
+        return entries.join(' · ');
     }
 
     onItemPlaced(itemId: string): void {
         this.levelManager.markItemPlaced(itemId);
+        this.completedOperationItems.add(itemId);
         this.updateProgressDisplay();
 
         if (this.levelManager.isLevelComplete()) {

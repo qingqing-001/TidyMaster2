@@ -1,11 +1,9 @@
 import { _decorator, Component, Vec3, Sprite, v3, Node, Color, UIOpacity, tween, UITransform, Layers } from 'cc';
 import { DragHandler } from './DragHandler';
+import { OperationType } from '../data/LevelData';
 
 const { ccclass, property } = _decorator;
 
-/**
- * 物品状态枚举
- */
 export enum ItemState {
   IDLE = 'idle',
   DRAGGING = 'dragging',
@@ -21,6 +19,8 @@ export class ItemController extends Component {
   public itemType = '';
 
   private state: ItemState = ItemState.IDLE;
+  private operation: OperationType = OperationType.DRAG;
+  private targetSlotId = '';
   private originalPosition: Vec3 = v3(0, 0, 0);
   private dragHandler: DragHandler | null = null;
   private sprite: Sprite | null = null;
@@ -38,46 +38,41 @@ export class ItemController extends Component {
     this.updateVisualFeedback();
   }
 
-  /**
-   * 设置物品信息
-   */
   public setup(itemId: string, itemType: string): void {
     this.itemId = itemId;
     this.itemType = itemType;
   }
 
-  /**
-   * 设置物品状态
-   */
+  public setOperation(operation: OperationType, targetSlotId = ''): void {
+    this.operation = operation;
+    this.targetSlotId = targetSlotId;
+  }
+
+  public getOperation(): OperationType {
+    return this.operation;
+  }
+
+  public getTargetSlotId(): string {
+    return this.targetSlotId;
+  }
+
   public setState(state: ItemState): void {
     this.state = state;
     this.updateVisualFeedback();
   }
 
-  /**
-   * 获取当前状态
-   */
   public getState(): ItemState {
     return this.state;
   }
 
-  /**
-   * 获取原始位置
-   */
   public getOriginalPosition(): Vec3 {
     return v3(this.originalPosition.x, this.originalPosition.y, this.originalPosition.z);
   }
 
-  /**
-   * 更新物品位置
-   */
   public setPosition(position: Vec3): void {
     this.node.setPosition(position);
   }
 
-  /**
-   * 更新视觉反馈
-   */
   private updateVisualFeedback(): void {
     switch (this.state) {
       case ItemState.DRAGGING:
@@ -93,9 +88,6 @@ export class ItemController extends Component {
     }
   }
 
-  /**
-   * 拖拽中视觉效果：放大1.1倍 + 阴影
-   */
   private applyDraggingVisuals(): void {
     tween(this.node).stop();
     this.node.setScale(1.1, 1.1, 1.1);
@@ -106,9 +98,6 @@ export class ItemController extends Component {
     }
   }
 
-  /**
-   * 归位成功视觉效果
-   */
   private applyPlacedVisuals(): void {
     tween(this.node).stop();
     this.node.setScale(1.0, 1.0, 1.0);
@@ -123,9 +112,6 @@ export class ItemController extends Component {
     }
   }
 
-  /**
-   * 恢复原始状态视觉效果
-   */
   private applyIdleVisuals(): void {
     tween(this.node).stop();
     this.node.setScale(1.0, 1.0, 1.0);
@@ -136,9 +122,6 @@ export class ItemController extends Component {
     }
   }
 
-  /**
-   * 重置物品到原始位置
-   */
   public resetToOriginalPosition(): void {
     this.node.setPosition(this.originalPosition);
   }
