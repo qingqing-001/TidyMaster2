@@ -1,6 +1,13 @@
 /**
- * 关卡系统验证脚本
- * 运行方式: node scripts/verify-level-system.js
+ * 历史遗留 JS 验证入口。
+ *
+ * 说明：
+ * - 本文件仅为兼容旧排障流程而保留；
+ * - 不属于仓库正式验证命令口径；
+ * - 正式验证请使用 package.json / README 中声明的唯一正式 npm 验证命令集合。
+ *
+ * 历史调用示例: node scripts/verify-level-system.js
+ * 请勿将该入口作为提测或验收依据。
  */
 
 // 模拟的LevelManager（不依赖Cocos）
@@ -150,7 +157,7 @@ const testLevel = {
 };
 
 // 运行测试
-console.log('\n========== 关卡系统验证测试 ==========\n');
+console.log('\n========== 关卡系统验证测试 =========\n');
 
 // 测试1: LevelManager
 console.log('--- 测试1: LevelManager ---');
@@ -225,6 +232,6 @@ setTimeout(() => {
     const afterRemove = levelManager.getPlacedCount() === 1;
     console.log(`✅ 物品移除功能正常: ${afterRemove}\n`);
     
-    console.log('========== 所有测试完成 ==========\n');
+    console.log('========== 所有测试完成 =========\n');
     process.exit(0);
 }, 4000);

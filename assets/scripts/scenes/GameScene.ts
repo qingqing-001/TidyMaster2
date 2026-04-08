@@ -16,6 +16,7 @@ import { MergeLogic } from '../merge/MergeLogic';
 import { AlbumManager } from '../collection/AlbumManager';
 import { AchievementManager } from '../collection/AchievementManager';
 import { AchievementType } from '../../data/AchievementData';
+import { DataManager } from '../core/DataManager';
 
 const { ccclass, property } = _decorator;
 
@@ -75,6 +76,9 @@ export class GameScene extends Component {
 
     onLoad() {
         this.registerEvents();
+        const progress = DataManager.getInstance().getProgress();
+        const savedLevelId = parseInt(progress.currentLevelId.replace('level-', ''), 10);
+        this.currentLevelId = Number.isFinite(savedLevelId) && savedLevelId > 0 ? savedLevelId : this.currentLevelId;
         this.loadLevel(this.currentLevelId);
     }
 
@@ -264,6 +268,9 @@ export class GameScene extends Component {
             case OperationType.FOLD:
                 this.setupFoldItem(itemNode);
                 break;
+            case OperationType.ROTATE:
+                this.setupRotateItem(itemNode);
+                break;
             case OperationType.DRAG:
             default:
                 (dragHandler ?? itemNode.addComponent(DragHandler)).enabled = true;
@@ -342,12 +349,57 @@ export class GameScene extends Component {
         return 3;
     }
 
+    private setupRotateItem(itemNode: Node): void {
+        const itemController = itemNode.getComponent(ItemController);
+        const itemId = itemController?.itemId ?? '';
+        const slot = this.operationSlotMap.get(itemId);
+        const requiredSteps = this.resolveRotateStepCount(slot);
+        const rotationDegrees = requiredSteps * 90;
+        itemController?.setRotationState(requiredSteps, rotationDegrees);
+        itemController?.setState(ItemState.PLACED);
+        this.levelManager.markItemPlaced(itemId);
+        this.completedOperationItems.add(itemId);
+
+        itemNode.on(Node.EventType.TOUCH_END, () => {
+            const currentStep = itemController?.getRotationStep() ?? 0;
+            if (currentStep <= 0) {
+                return;
+            }
+            const nextStep = currentStep - 1;
+            const nextDegrees = nextStep * 90;
+            itemController?.setRotationState(nextStep, nextDegrees);
+            this.activeOperationProgress.set(itemId, Math.round(((requiredSteps - nextStep) / Math.max(requiredSteps, 1)) * 100));
+            this.eventManager.emit(nextStep === 0 ? GAME_EVENTS.OPERATION_COMPLETE : GAME_EVENTS.OPERATION_PROGRESS, {
+                levelId: this.currentLevelId,
+                itemId,
+                slotId: slot?.id,
+                operation: OperationType.ROTATE,
+                progress: Math.round(((requiredSteps - nextStep) / Math.max(requiredSteps, 1)) * 100),
+                completed: nextStep === 0,
+            });
+        }, this);
+    }
+
+    private resolveRotateStepCount(slot?: LevelSlotConfig): number {
+        const width = slot?.size.w ?? 100;
+        const height = slot?.size.h ?? 100;
+        if (width >= 120 && height >= 120) {
+            return 3;
+        }
+        if (width >= 100 || height >= 100) {
+            return 2;
+        }
+        return 1;
+    }
+
     private getItemColorByOperation(operation: OperationType): Color {
         switch (operation) {
             case OperationType.WIPE:
                 return new Color(210, 170, 110, 255);
             case OperationType.FOLD:
                 return new Color(140, 190, 255, 255);
+            case OperationType.ROTATE:
+                return new Color(255, 175, 120, 255);
             case OperationType.DRAG:
             default:
                 return new Color(100, 200, 100, 255);
@@ -447,7 +499,7 @@ export class GameScene extends Component {
             if (!itemConfig) {
                 return;
             }
-            const label = itemConfig.operation === OperationType.WIPE ? '擦洗' : itemConfig.operation === OperationType.FOLD ? '折叠' : '操作';
+            const label = itemConfig.operation === OperationType.WIPE ? '擦洗' : itemConfig.operation === OperationType.FOLD ? '折叠' : itemConfig.operation === OperationType.ROTATE ? '旋转' : '操作';
             entries.push(`${label}${Math.round(progress)}%`);
         });
         return entries.join(' · ');
@@ -473,12 +525,27 @@ export class GameScene extends Component {
             this.timerController.pauseTimer();
         }
 
+        const rewardCoins = this.currentLevelConfig?.rewards.baseCoin ?? 0;
+        if (rewardCoins > 0) {
+            DataManager.getInstance().addCoins(rewardCoins);
+        }
+
+        const nextLevelId = this.resolveNextLevelId();
+        if (nextLevelId) {
+            DataManager.getInstance().setCurrentLevel(`level-${nextLevelId.toString().padStart(3, '0')}`);
+        }
+
         this.audioManager.playClick();
         this.eventManager.emit(GAME_EVENTS.LEVEL_COMPLETE, {
-            levelId: this.levelManager.getCurrentLevel()?.id,
+            levelId: this.currentLevelId,
             stars,
-            sourceLevelId: this.currentLevelId,
             sceneDisplayName: this.currentLevelConfig?.sceneDisplayName,
+            rewardCoins,
+            nextLevelId,
+        });
+
+        this.eventManager.emit(GAME_EVENTS.CHANGE_SCENE, {
+            sceneName: 'Result',
         });
 
         if (this.progressLabel) {
@@ -486,6 +553,11 @@ export class GameScene extends Component {
         }
 
         console.log(`[GameScene] 关卡完成！获得 ${stars} 星评价`);
+    }
+
+    private resolveNextLevelId(): number | undefined {
+        const nextLevelId = this.currentLevelId + 1;
+        return getLevelConfig(nextLevelId) ? nextLevelId : undefined;
     }
 
     onTimeOut(): void {

@@ -1,9 +1,13 @@
 /**
- * TidyMaster2 最小可运行Demo验证脚本
- * 
- * 此脚本不依赖Cocos Creator编辑器，用于验证TypeScript代码可以正确初始化
- * 
- * 使用方法: node scripts/verify-demo.js
+ * 历史遗留 JS 验证入口。
+ *
+ * 说明：
+ * - 本文件仅为兼容旧排障流程而保留；
+ * - 不属于仓库正式验证命令口径；
+ * - 正式验证请使用 package.json / README 中声明的唯一正式 npm 验证命令集合。
+ *
+ * 历史调用示例: node scripts/verify-demo.js
+ * 请勿在提测、验收、发布说明中继续使用该入口。
  */
 
 // 模拟 Cocos Creator 的基础类型（仅用于编译验证）

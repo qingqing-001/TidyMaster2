@@ -5,17 +5,25 @@ import { AlbumManager } from '../collection/AlbumManager';
 import { AchievementManager } from '../collection/AchievementManager';
 import { SeasonPass } from '../collection/SeasonPass';
 import { AchievementType } from '../../data/AchievementData';
+import { DataManager } from '../core/DataManager';
+import { getLevelConfig } from '../data/levels';
+import type { LevelCompletePayload, LevelFailedPayload } from '../core/eventPayloads';
 
 const { ccclass, property } = _decorator;
 
-// 事件payload类型定义
-interface LevelCompletePayload {
-    levelId?: string;
-    stars: number;
-}
-
-interface LevelFailedPayload {
-    levelId?: string;
+function assertLevelCompletePayload(payload: LevelCompletePayload): void {
+    if (typeof payload.levelId !== 'number') {
+        throw new Error('LEVEL_COMPLETE.levelId 必须为 number');
+    }
+    if (typeof payload.stars !== 'number') {
+        throw new Error('LEVEL_COMPLETE.stars 必须为 number');
+    }
+    if (typeof payload.rewardCoins !== 'number') {
+        throw new Error('LEVEL_COMPLETE.rewardCoins 必须为 number');
+    }
+    if (payload.nextLevelId !== undefined && typeof payload.nextLevelId !== 'number') {
+        throw new Error('LEVEL_COMPLETE.nextLevelId 必须为 number | undefined');
+    }
 }
 
 /**
@@ -42,7 +50,11 @@ export class ResultScene extends Component {
 
     private _eventManager: EventManager | null = null;
     private _lastStars: number = 0;
-    private _lastLevelId: string | undefined;
+    private _lastLevelId: number | undefined;
+    private _lastRewardCoins: number = 0;
+    private _nextLevelId: number | undefined;
+    private _boundLevelComplete = (payload?: LevelCompletePayload) => this.onLevelComplete(payload);
+    private _boundLevelFailed = (payload?: LevelFailedPayload) => this.onLevelFailed(payload);
 
     onLoad(): void {
         this._eventManager = EventManager.getInstance();
@@ -71,13 +83,13 @@ export class ResultScene extends Component {
         // 监听关卡完成事件
         this._eventManager.on<LevelCompletePayload>(
             GAME_EVENTS.LEVEL_COMPLETE, 
-            this.onLevelComplete.bind(this)
+            this._boundLevelComplete
         );
 
         // 监听关卡失败事件
         this._eventManager.on<LevelFailedPayload>(
             GAME_EVENTS.LEVEL_FAILED, 
-            this.onLevelFailed.bind(this)
+            this._boundLevelFailed
         );
 
         console.log('[ResultScene] 已注册 LEVEL_COMPLETE 和 LEVEL_FAILED 事件监听');
@@ -91,28 +103,34 @@ export class ResultScene extends Component {
             return;
         }
 
-        this._eventManager.off(GAME_EVENTS.LEVEL_COMPLETE, this.onLevelComplete.bind(this));
-        this._eventManager.off(GAME_EVENTS.LEVEL_FAILED, this.onLevelFailed.bind(this));
+        this._eventManager.off(GAME_EVENTS.LEVEL_COMPLETE, this._boundLevelComplete);
+        this._eventManager.off(GAME_EVENTS.LEVEL_FAILED, this._boundLevelFailed);
     }
 
     /**
      * 处理关卡完成事件
      */
     private onLevelComplete(data?: LevelCompletePayload): void {
-        const payload = data || { stars: 0 };
-        this._lastStars = payload.stars || 0;
-        this._lastLevelId = payload.levelId;
+        if (!data) {
+            return;
+        }
 
-        console.log(`[ResultScene] 收到 LEVEL_COMPLETE 事件，levelId: ${payload.levelId}, stars: ${payload.stars}`);
+        assertLevelCompletePayload(data);
+        this._lastStars = data.stars;
+        this._lastLevelId = data.levelId;
+        this._lastRewardCoins = data.rewardCoins;
+        this._nextLevelId = data.nextLevelId;
+
+        console.log(`[ResultScene] 收到 LEVEL_COMPLETE 事件，levelId: ${data.levelId}, stars: ${data.stars}`);
 
         // 显示成功面板
-        this.showSuccess(payload.stars || 0, payload.levelId);
+        this.showSuccess(data.stars, data.levelId, data.sceneDisplayName);
 
         // 播放成功音效（如果有AudioManager）
         this.playSuccessSound();
 
         // 集成收集和养成系统
-        this.integrateCollectionAndProgression(payload);
+        this.integrateCollectionAndProgression(data);
     }
 
     /**
@@ -120,13 +138,11 @@ export class ResultScene extends Component {
      * 在关卡完成后调用图鉴、成就、赛季通行证等系统
      */
     private integrateCollectionAndProgression(payload: LevelCompletePayload): void {
-        const levelId = payload.levelId || this._lastLevelId;
-        const stars = payload.stars || this._lastStars;
+        const levelId = payload.levelId;
+        const stars = payload.stars;
 
         // 1. 收集物品到图鉴 (基于关卡ID生成物品ID)
-        if (levelId) {
-            this.collectItemsToAlbum(levelId);
-        }
+        this.collectItemsToAlbum(levelId);
 
         // 2. 触发成就检查
         this.checkAchievements(levelId, stars);
@@ -139,12 +155,12 @@ export class ResultScene extends Component {
      * 收集物品到图鉴
      * 根据关卡收集对应的物品
      */
-    private collectItemsToAlbum(levelId: number | string | undefined): void {
+    private collectItemsToAlbum(levelId: number | undefined): void {
         try {
             const albumManager = AlbumManager.instance;
             
             // 根据关卡ID生成物品ID (示例：level-1 -> item_furniture_1, item_stationery_1)
-            const levelNum = typeof levelId === 'string' ? parseInt(levelId.replace('level-', '')) || 1 : (levelId || 1);
+            const levelNum = levelId || 1;
             
             // 为每个关卡生成几个物品ID
             const itemIds: string[] = [];
@@ -183,7 +199,7 @@ export class ResultScene extends Component {
     /**
      * 检查成就
      */
-    private checkAchievements(levelId: number | string | undefined, stars: number): void {
+    private checkAchievements(levelId: number | undefined, stars: number): void {
         try {
             const achievementManager = AchievementManager.instance;
             const seasonPass = SeasonPass.instance;
@@ -192,7 +208,7 @@ export class ResultScene extends Component {
             const totalStars = seasonPass.getCurrentExp() + stars; // 使用经验作为星星计数
             
             // 1. 通关成就检查
-            const currentLevel = typeof levelId === 'string' ? parseInt(levelId.replace('level-', '')) || 1 : (levelId || 1);
+            const currentLevel = levelId || 1;
             achievementManager.triggerAchievementCheck(AchievementType.LEVEL_COUNT, currentLevel);
 
             // 2. 整理物品成就 (每个关卡完成算整理了多个物品)
@@ -248,7 +264,7 @@ export class ResultScene extends Component {
     /**
      * 显示成功面板
      */
-    private showSuccess(stars: number, levelId?: string): void {
+    private showSuccess(stars: number, levelId?: number, sceneDisplayName?: string): void {
         // 隐藏失败面板
         if (this.failPanel) {
             this.failPanel.active = false;
@@ -271,8 +287,9 @@ export class ResultScene extends Component {
 
         // 更新描述
         if (this.descLabel) {
-            const levelName = levelId || '当前关卡';
-            this.descLabel.string = `恭喜完成 ${levelName}！`;
+            const levelName = sceneDisplayName || levelId || '当前关卡';
+            const rewardText = this._lastRewardCoins > 0 ? `，获得 ${this._lastRewardCoins} 金币` : '';
+            this.descLabel.string = `恭喜完成 ${levelName}${rewardText}！`;
         }
 
         // 触发成功特效
@@ -282,7 +299,7 @@ export class ResultScene extends Component {
     /**
      * 显示失败面板
      */
-    private showFailed(levelId?: string): void {
+    private showFailed(levelId?: number): void {
         // 隐藏成功面板
         if (this.successPanel) {
             this.successPanel.active = false;
@@ -366,16 +383,35 @@ export class ResultScene extends Component {
      * 点击下一关
      */
     onNextLevel(): void {
-        console.log('[ResultScene] 点击下一关');
-        // TODO: 切换到游戏场景，加载下一关
+        const nextLevelId = this._nextLevelId;
+        console.log('[ResultScene] 点击下一关', nextLevelId);
+        if (!nextLevelId || !getLevelConfig(nextLevelId)) {
+            this.onBackHome();
+            return;
+        }
+
+        DataManager.getInstance().setCurrentLevel(`level-${nextLevelId.toString().padStart(3, '0')}`);
+        this._eventManager?.emit(GAME_EVENTS.CHANGE_SCENE, {
+            sceneName: 'Game',
+            levelId: nextLevelId,
+        });
     }
 
     /**
      * 重新开始
      */
     onRetry(): void {
-        console.log('[ResultScene] 点击重新开始');
-        // TODO: 重新开始当前关卡
+        const currentLevel = this._lastLevelId;
+        console.log('[ResultScene] 点击重新开始', currentLevel);
+        if (!currentLevel) {
+            return;
+        }
+
+        DataManager.getInstance().setCurrentLevel(`level-${currentLevel.toString().padStart(3, '0')}`);
+        this._eventManager?.emit(GAME_EVENTS.CHANGE_SCENE, {
+            sceneName: 'Game',
+            levelId: currentLevel,
+        });
     }
 
     /**
@@ -383,7 +419,9 @@ export class ResultScene extends Component {
      */
     onBackHome(): void {
         console.log('[ResultScene] 点击返回主页');
-        // TODO: 切换到主页场景
+        this._eventManager?.emit(GAME_EVENTS.CHANGE_SCENE, {
+            sceneName: 'Home',
+        });
     }
 
     /**
@@ -404,7 +442,7 @@ export class ResultScene extends Component {
     /**
      * 获取上次关卡ID
      */
-    getLastLevelId(): string | undefined {
+    getLastLevelId(): number | undefined {
         return this._lastLevelId;
     }
 

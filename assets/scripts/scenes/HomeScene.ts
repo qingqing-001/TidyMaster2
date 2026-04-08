@@ -3,9 +3,10 @@ import { DataManager, PlayerProgress } from '../core/DataManager';
 import { AudioManager } from '../audio/AudioManager';
 import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../../data/constants';
-import { getLevelConfig, CHAPTER_1_LEVELS } from '../data/levels';
+import { getAllLevels, getLevelConfig } from '../data/levels';
 import type { LevelDataConfig } from '../data/types';
 import { DailyCheckin } from '../ui/DailyCheckin';
+import type { ChangeScenePayload, LevelCompletePayload } from '../core/eventPayloads';
 
 const { ccclass, property } = _decorator;
 
@@ -117,8 +118,8 @@ export class HomeScene extends Component {
         this.levelGrid.removeAllChildren();
         this.levelButtons = [];
 
-        // 获取第1章关卡（教学关）
-        const levels = CHAPTER_1_LEVELS;
+        // 获取全量主线关卡，支持章节1-6顺序解锁
+        const levels = getAllLevels();
 
         // 为每个关卡创建按钮
         for (let i = 0; i < levels.length; i++) {
@@ -368,7 +369,8 @@ export class HomeScene extends Component {
     private updateAllLevelButtons(): void {
         for (let i = 0; i < this.levelButtons.length; i++) {
             const btn = this.levelButtons[i];
-            const levelId = i + 1; // 关卡ID从1开始
+            const label = btn.getChildByName('Label')?.getComponent(Label);
+            const levelId = label ? parseInt(label.string, 10) : i + 1;
             this.updateLevelButtonState(btn, levelId <= this.currentLevelId, levelId === this.currentLevelId);
         }
     }
@@ -443,8 +445,8 @@ export class HomeScene extends Component {
 
         // 发送切换场景事件
         const eventManager = EventManager.getInstance();
-        eventManager.emit(GAME_EVENTS.CHANGE_SCENE, { 
-            sceneName: 'GameScene',
+        eventManager.emit<ChangeScenePayload>(GAME_EVENTS.CHANGE_SCENE, { 
+            sceneName: 'Game',
             levelId: levelId 
         });
     }
@@ -452,17 +454,17 @@ export class HomeScene extends Component {
     /**
      * 关卡完成回调
      */
-    private onLevelComplete(data?: { levelId: number, stars: number }): void {
+    private onLevelComplete(data?: LevelCompletePayload): void {
         if (!data) return;
         
         console.log('[HomeScene] 关卡完成:', data.levelId, '星级:', data.stars);
 
         // 更新玩家进度
-        const nextLevelId = data.levelId + 1;
+        const nextLevelId = data.nextLevelId;
         
         // 检查下一关是否解锁
-        const nextLevelConfig = getLevelConfig(nextLevelId);
-        if (nextLevelConfig) {
+        const nextLevelConfig = nextLevelId !== undefined ? getLevelConfig(nextLevelId) : undefined;
+        if (nextLevelId !== undefined && nextLevelConfig) {
             // 解锁下一关
             if (nextLevelId > this.currentLevelId) {
                 this.currentLevelId = nextLevelId;
