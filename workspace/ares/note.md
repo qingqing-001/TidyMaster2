@@ -1,43 +1,7 @@
-# Ares 周期记录
+# 本轮记录
 
-## 当前周期
-
-### 已完成的工作
-
-实现了M3.2收集和养成系统的四个核心模块：
-
-1. **家居图鉴收集系统 (AlbumManager)**
-   - 记录所有收集的物品
-   - 收集里程碑奖励系统（5/10/20/30/50/100个物品）
-   - 本地存储持久化
-
-2. **我的房间装饰系统 (RoomDecorationManager)**
-   - 装饰品购买和拥有系统
-   - 装饰品放置和管理
-   - 装饰品分类（家具、植物、挂画、地毯、灯具、装饰品）
-
-3. **成就系统 (AchievementManager)**
-   - 成就配置和触发检查
-   - 进度追踪
-   - 奖励发放（金币、称号、道具）
-   - 多种成就类型（通关、物品整理、星级、合成、连击、登录）
-
-4. **赛季通行证 (SeasonPass)**
-   - 50级赛季等级系统
-   - 免费和高级奖励
-   - 经验积累和升级
-   - 30天赛季周期
-
-### 修改的文件
-
-- assets/data/constants.ts - 添加新事件常量
-- assets/scripts/collection/AchievementManager.ts - 完整实现
-- assets/scripts/collection/AlbumManager.ts - 完整实现
-- assets/scripts/collection/RoomDecorationManager.ts - 新建
-- assets/scripts/collection/SeasonPass.ts - 完整实现
-
-### 待完成
-
-- UI界面集成（由其他agent完成）
-- 装饰品资源的图片资源添加
-- 赛季背景系统完善
+- 已确认仓库位于 TidyMaster2/repo，未越界修改 workspace 保护目录。
+- 已核查 issue #79/#82/#83 对应成果已落地：新增第4/5/6章关卡配置并接入聚合。
+- 已验证总关卡数 34，章节 4/5/6 难度递进，均含 Boss 关。
+- 本地通过：npm run verify:chapter4、verify:chapter5、verify:chapter6、verify:level-counts。
+- 下轮若 Apollo 打回，优先按其反馈补测试或修正关卡结构一致性。

@@ -7,6 +7,9 @@ import { OperationType } from './LevelData';
 import { ITEM_TYPES, LevelDataConfig } from './types';
 import { CHAPTER_2_LEVELS, LEVEL_2_1 } from './chapter2Levels';
 import { CHAPTER_3_LEVELS, LEVEL_3_1 } from './chapter3Levels';
+import { CHAPTER_4_LEVELS, LEVEL_4_1 } from './chapter4Levels';
+import { CHAPTER_5_LEVELS, LEVEL_5_1 } from './chapter5Levels';
+import { CHAPTER_6_LEVELS, LEVEL_6_1 } from './chapter6Levels';
 
 const BOOK = ITEM_TYPES.BOOK;
 const PEN = ITEM_TYPES.PEN;
@@ -543,20 +546,26 @@ export const CHAPTER_1_LEVELS: LevelDataConfig[] = [
     LEVEL_1_5,
 ];
 
-export const LEVEL_MAP: Record<number, LevelDataConfig> = {
-    1: LEVEL_1_1,
-    2: LEVEL_1_2,
-    3: LEVEL_1_3,
-    4: LEVEL_1_4,
-    5: LEVEL_1_5,
-    201: LEVEL_2_1,
-    301: LEVEL_3_1,
-};
+export const LEVEL_MAP: Record<number, LevelDataConfig> = Object.fromEntries(
+    getAllLevels().map(level => [level.id, level]),
+) as Record<number, LevelDataConfig>;
 
 export function getLevelConfig(levelId: number): LevelDataConfig | undefined {
     return LEVEL_MAP[levelId];
 }
 
 export function getChapterLevels(chapter: number): LevelDataConfig[] {
-    return [...CHAPTER_1_LEVELS, ...CHAPTER_2_LEVELS, ...CHAPTER_3_LEVELS].filter(level => level.chapter === chapter);
+    return [...CHAPTER_1_LEVELS, ...CHAPTER_2_LEVELS, ...CHAPTER_3_LEVELS, ...CHAPTER_4_LEVELS, ...CHAPTER_5_LEVELS, ...CHAPTER_6_LEVELS].filter(level => level.chapter === chapter);
 }
+
+export function getAllLevels(): LevelDataConfig[] {
+    return [
+        ...CHAPTER_1_LEVELS,
+        ...CHAPTER_2_LEVELS,
+        ...CHAPTER_3_LEVELS,
+        ...CHAPTER_4_LEVELS,
+        ...CHAPTER_5_LEVELS,
+        ...CHAPTER_6_LEVELS,
+    ];
+}
+

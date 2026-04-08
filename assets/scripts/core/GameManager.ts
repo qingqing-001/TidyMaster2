@@ -4,8 +4,9 @@ import { DataManager } from './DataManager';
 import { EventManager } from './EventManager';
 import { LevelManager } from '../gameplay/LevelManager';
 import { GAME_CONFIG, GAME_EVENTS } from '../../data/constants';
+import type { ChangeScenePayload } from './eventPayloads';
+import PlatformManager from '../platform/PlatformManager';
 import { PlatformAdapter } from '../platform/PlatformAdapter';
-import { WxAdapter } from '../platform/WxAdapter';
 
 const { ccclass, property } = _decorator;
 
@@ -17,7 +18,7 @@ export class GameManager extends Component {
   private readonly dataManager = DataManager.getInstance();
   private readonly audioManager = AudioManager.getInstance();
   private readonly levelManager = new LevelManager();
-  private readonly platformAdapter: PlatformAdapter = new WxAdapter();
+  private readonly platformAdapter: PlatformAdapter = PlatformManager.getAdapter();
 
   // 场景过渡相关
   private fadeOverlay: Node | null = null;
@@ -80,9 +81,22 @@ export class GameManager extends Component {
   /**
    * 场景切换处理
    */
-  private onChangeScene(sceneName?: string): void {
-    if (sceneName) {
-      this.loadScene(sceneName);
+  private onChangeScene(payload?: string | ChangeScenePayload): void {
+    if (!payload) {
+      return;
+    }
+
+    if (typeof payload === 'string') {
+      this.loadScene(payload);
+      return;
+    }
+
+    if (payload.levelId !== undefined) {
+      this.dataManager.setCurrentLevel(`level-${payload.levelId.toString().padStart(3, '0')}`);
+    }
+
+    if (payload.sceneName) {
+      this.loadScene(payload.sceneName);
     }
   }
 

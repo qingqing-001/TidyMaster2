@@ -21,6 +21,8 @@ export class ItemController extends Component {
   private state: ItemState = ItemState.IDLE;
   private operation: OperationType = OperationType.DRAG;
   private targetSlotId = '';
+  private rotationStep = 0;
+  private rotationDegrees = 0;
   private originalPosition: Vec3 = v3(0, 0, 0);
   private dragHandler: DragHandler | null = null;
   private sprite: Sprite | null = null;
@@ -54,6 +56,23 @@ export class ItemController extends Component {
 
   public getTargetSlotId(): string {
     return this.targetSlotId;
+  }
+
+  public setRotationState(step: number, degrees: number): void {
+    this.rotationStep = step;
+    this.rotationDegrees = degrees;
+    this.node.angle = degrees;
+    if (this.shadowNode) {
+      this.shadowNode.angle = degrees;
+    }
+  }
+
+  public getRotationStep(): number {
+    return this.rotationStep;
+  }
+
+  public getRotationDegrees(): number {
+    return this.rotationDegrees;
   }
 
   public setState(state: ItemState): void {

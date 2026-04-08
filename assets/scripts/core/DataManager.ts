@@ -31,6 +31,7 @@ export class DataManager {
   }
 
   constructor() {
+    this.loadProgress();
     this.loadCoins();
   }
 

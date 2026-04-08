@@ -29,10 +29,39 @@ declare module 'cc' {
   }
   export type Size = { width: number, height: number };
 
+  export type CCInteger = number;
+  export type CCFloat = number;
+  export type CCBoolean = boolean;
+  export type CCString = string;
+  export type PropertyType = Function | (new (...args: any[]) => any) | Array<Function | (new (...args: any[]) => any)>;
+  export interface PropertyOptions {
+    type?: PropertyType;
+    visible?: boolean;
+    displayName?: string;
+    tooltip?: string;
+    readonly?: boolean;
+    min?: number;
+    max?: number;
+    step?: number;
+    multiline?: boolean;
+    serializable?: boolean;
+    override?: boolean;
+    formerlySerializedAs?: string;
+    editorOnly?: boolean;
+    [key: string]: any;
+  }
+
+  export type PropertyDecoratorFactory = {
+    (target: object, propertyKey: string | symbol): void;
+    (): PropertyDecorator;
+    (type?: PropertyType): PropertyDecorator;
+    (options?: PropertyOptions): PropertyDecorator;
+  };
+
   // // _decorator
   export const _decorator: {
     ccclass: (name: string) => ClassDecorator;
-    property: any;
+    property: PropertyDecoratorFactory;
     executeInEditMode: ClassDecorator;
     menu: ClassDecorator;
     help: ClassDecorator;
@@ -45,7 +74,7 @@ declare module 'cc' {
   export const ccclass: (name: string) => ClassDecorator;
 
   // property装饰器 - 支持多种调用方式
-  export const property: any;
+  export const property: PropertyDecoratorFactory;
 
   export const executeInEditMode: ClassDecorator;
   export const menu: ClassDecorator;
@@ -105,6 +134,7 @@ declare module 'cc' {
     scale: Vec3;
     rotation: any;
     layer: number;
+    angle: number;
     constructor(name?: string);
 
     // 事件类型 - 作为实例属性和命名空间

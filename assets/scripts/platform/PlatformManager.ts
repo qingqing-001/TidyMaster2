@@ -1,60 +1,51 @@
-import { PlatformAdapter } from './PlatformAdapter';
-import { WxAdapter } from './WxAdapter';
+import { PlatformAdapter, SystemInfo, UserInfo } from './PlatformAdapter';
 import { WebAdapter } from './WebAdapter';
+import { WxAdapter } from './WxAdapter';
 
 declare const wx: unknown;
 
 export class PlatformManager {
-  private static instance: PlatformManager;
-  private adapter: PlatformAdapter;
+  private static instance: PlatformManager | null = null;
+  private readonly adapter: PlatformAdapter;
 
   private constructor() {
-    // 根据环境自动选择适配器
-    if (this.detectWechat()) {
-      console.log('[PlatformManager] Using WxAdapter');
-      this.adapter = new WxAdapter();
-    } else {
-      console.log('[PlatformManager] Using WebAdapter');
-      this.adapter = new WebAdapter();
-    }
+    this.adapter = PlatformManager.detectWechat() ? new WxAdapter() : new WebAdapter();
+    console.log(`[PlatformManager] Using ${this.adapter.constructor.name}`);
   }
 
   public static getInstance(): PlatformManager {
     if (!PlatformManager.instance) {
       PlatformManager.instance = new PlatformManager();
     }
+
     return PlatformManager.instance;
   }
 
   public static getAdapter(): PlatformAdapter {
-    return PlatformManager.getInstance().getAdapterInternal();
+    return PlatformManager.getInstance().adapter;
   }
 
-  private getAdapterInternal(): PlatformAdapter {
-    return this.adapter;
+  public static resetForTest(): void {
+    PlatformManager.instance = null;
   }
 
-  private detectWechat(): boolean {
-    // 检查wx对象是否存在
+  public static detectWechat(): boolean {
     if (typeof wx !== 'undefined') {
       return true;
     }
 
-    // 检查UserAgent中是否包含微信标识
     if (typeof navigator !== 'undefined') {
-      const ua = navigator.userAgent.toLowerCase();
-      return ua.indexOf('micromessenger') !== -1;
+      return navigator.userAgent.toLowerCase().includes('micromessenger');
     }
 
     return false;
   }
 
-  // 便捷方法，直接通过PlatformManager调用
   public static isWechat(): boolean {
     return PlatformManager.getAdapter().isWechat();
   }
 
-  public static getSystemInfo(): Record<string, unknown> | null {
+  public static getSystemInfo(): SystemInfo | null {
     return PlatformManager.getAdapter().getSystemInfo();
   }
 
@@ -78,11 +69,11 @@ export class PlatformManager {
     PlatformManager.getAdapter().share(title, imageUrl);
   }
 
-  public static login(): Promise<import('./PlatformAdapter').UserInfo> {
+  public static login(): Promise<UserInfo> {
     return PlatformManager.getAdapter().login();
   }
 
-  public static getUserInfo(): import('./PlatformAdapter').UserInfo | null {
+  public static getUserInfo(): UserInfo | null {
     return PlatformManager.getAdapter().getUserInfo();
   }
 
@@ -99,5 +90,4 @@ export class PlatformManager {
   }
 }
 
-// 导出默认实例
 export default PlatformManager;

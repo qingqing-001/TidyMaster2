@@ -47,7 +47,13 @@ export class EventManager {
       return;
     }
 
-    handlers.forEach((entry) => entry.handler(payload));
+    handlers.forEach((entry) => {
+      if (entry.target) {
+        entry.handler.call(entry.target, payload);
+        return;
+      }
+      entry.handler(payload);
+    });
   }
 
   public clear(): void {

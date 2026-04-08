@@ -23,6 +23,12 @@ declare global {
   }
 }
 
+function isNodeLikeRuntime(): boolean {
+  return typeof globalThis !== 'undefined'
+    && 'process' in globalThis
+    && !!(globalThis as typeof globalThis & { process?: { versions?: { node?: string } } }).process?.versions?.node;
+}
+
 const SFX_RESOURCE_MAP: Record<string, string> = {
   // 当前资源实际位于 assets/resources/audio/sfx_item_*.mp3，
   // 因此 resources.load 需要使用扁平路径 audio/sfx_item_*。
@@ -68,6 +74,9 @@ export class AudioManager {
    * 组件加载时预加载所有音效
    */
   onLoad(): void {
+    if (!this.enabled || isNodeLikeRuntime()) {
+      return;
+    }
     this.preloadSFX();
   }
 
@@ -75,6 +84,10 @@ export class AudioManager {
    * 预加载所有SFX音效
    */
   private preloadSFX(): void {
+    if (!this.enabled || isNodeLikeRuntime()) {
+      return;
+    }
+
     if (this.preloadStarted) {
       return;
     }
@@ -95,6 +108,9 @@ export class AudioManager {
    */
   public setEnabled(enabled: boolean): void {
     this.enabled = enabled;
+    if (enabled && !isNodeLikeRuntime()) {
+      this.preloadSFX();
+    }
   }
 
   /**

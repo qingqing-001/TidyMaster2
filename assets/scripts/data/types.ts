@@ -5,7 +5,6 @@
 
 import { OperationType } from './LevelData';
 
-// 物品类型枚举
 export const ITEM_TYPES = {
     // 文具类
     BOOK: 'book',
@@ -51,6 +50,36 @@ export const ITEM_TYPES = {
     TRASH: 'trash',
     SPONGE: 'sponge',
     COUNTER: 'counter',
+
+    // 冰箱物品类（第4章）
+    FOOD: 'food',
+    VEGETABLE: 'vegetable',
+    FRUIT: 'fruit',
+    DAIRY: 'dairy',
+    MEAT: 'meat',
+    DRINK: 'drink',
+    LEFTOVER: 'leftover',
+    ICE_CREAM: 'ice_cream',
+    JAM: 'jam',
+    EGG: 'egg',
+
+    // 浴室物品类（第5章）
+    SHAMPOO: 'shampoo',
+    SOAP: 'soap',
+    TOILET_PAPER: 'toilet_paper',
+    TOOTHBRUSH: 'toothbrush',
+    TOOTHPASTE: 'toothpaste',
+    TOWEL_BATH: 'towel_bath',
+    RAZOR: 'razor',
+    BATH_BOMB: 'bath_bomb',
+    FLOSS: 'floss',
+    MIRROR: 'mirror',
+
+    // 管道类（第5章）
+    PIPE: 'pipe',
+    PIPE_ELBOW: 'pipe_elbow',
+    PIPE_TEE: 'pipe_tee',
+    VALVE: 'valve',
 } as const;
 
 export type ItemType = typeof ITEM_TYPES[keyof typeof ITEM_TYPES];
@@ -110,16 +139,17 @@ export interface GameConfig {
         settingsKey: string;
         progressKey: string;
     };
+    DEFAULT_LEVEL_ID: string;
+    SLOT_CAPACITY: number;
 }
 
-// 场景配置接口
 export interface SceneConfig {
     id: string;
     name: string;
     displayName: string;
     bgSprite: string;
     ambientSfxKey?: string;
-    items: ItemType[];  // 场景中可出现的物品类型
+    items: ItemType[];
     defaultTimeLimit: number;
 }
 
@@ -127,7 +157,6 @@ export interface SceneConfigMap {
     [sceneId: string]: SceneConfig;
 }
 
-// 音频配置接口
 export interface AudioConfig {
     bgm: {
         [key: string]: BgmTrackConfig;
@@ -137,7 +166,6 @@ export interface AudioConfig {
     };
 }
 
-// 关卡配置接口（扩展 LevelData 中的定义）
 export interface LevelDataConfig {
     id: number;
     chapter: number;
@@ -153,7 +181,6 @@ export interface LevelDataConfig {
     rewards: RewardConfig;
 }
 
-// 关卡物品配置
 export interface LevelItemConfig {
     id: string;
     type: ItemType;
@@ -166,7 +193,6 @@ export interface LevelItemConfig {
     rotation?: number;
 }
 
-// 关卡目标位置配置
 export interface LevelSlotConfig {
     id: string;
     pos: Vector2Like;
@@ -176,7 +202,6 @@ export interface LevelSlotConfig {
     label?: string;
 }
 
-// 章节配置
 export interface ChapterConfig {
     id: number;
     name: string;
@@ -184,15 +209,14 @@ export interface ChapterConfig {
     levelRange: [number, number];
     bossLevels: number[];
     rewardChapter: number;
-    unlockRequirement?: number;  // 解锁所需星数
+    unlockRequirement?: number;
 }
 
-// 玩家进度数据
 export interface PlayerProgress {
     currentLevel: number;
     unlockedLevels: number[];
     levelStars: {
-        [levelId: number]: number;  // 0-3 星
+        [levelId: number]: number;
     };
     levelHighScores: {
         [levelId: number]: number;
@@ -200,7 +224,6 @@ export interface PlayerProgress {
     completedChapters: number[];
 }
 
-// 玩家数据
 export interface PlayerData {
     id: string;
     name: string;
@@ -214,7 +237,6 @@ export interface PlayerData {
     lastPlayedAt: number;
 }
 
-// 玩家设置
 export interface PlayerSettings {
     bgmEnabled: boolean;
     sfxEnabled: boolean;
@@ -224,34 +246,12 @@ export interface PlayerSettings {
     hapticEnabled: boolean;
 }
 
-// 游戏状态
 export interface GameState {
     levelId: number;
     currentScore: number;
-    timeRemaining: number;
-    itemsPlaced: string[];
+    placedItems: string[];
+    remainingTime: number;
     comboCount: number;
     isPaused: boolean;
-    isComplete: boolean;
-}
-
-// 物品实体状态
-export interface ItemEntity {
-    id: string;
-    type: ItemType;
-    spriteKey: string;
-    position: Vector2Like;
-    isPlaced: boolean;
-    isDragging: boolean;
-    scale: number;
-    rotation: number;
-}
-
-// 目标位置实体状态
-export interface SlotEntity {
-    id: string;
-    position: Vector2Like;
-    size: SizeLike;
-    occupied: boolean;
-    placedItemId?: string;
+    starsEarned: number;
 }

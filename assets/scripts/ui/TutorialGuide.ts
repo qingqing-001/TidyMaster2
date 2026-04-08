@@ -8,6 +8,7 @@ import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../../data/constants';
 import { getLevelConfig } from '../data/levels';
 import { OperationType } from '../data/LevelData';
+import type { LevelCompletePayload } from '../core/eventPayloads';
 
 const { ccclass, property } = _decorator;
 
@@ -91,7 +92,7 @@ export class TutorialGuide extends Component {
     /**
      * 关卡完成时触发
      */
-    private onLevelComplete(data: { levelId: string }): void {
+    private onLevelComplete(data: LevelCompletePayload): void {
         // 标记该关卡的引导已完成
         if (this.currentLevelId <= 3) {
             this.tutorialCompletedLevels.add(this.currentLevelId);
