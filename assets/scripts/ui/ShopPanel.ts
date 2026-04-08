@@ -361,7 +361,7 @@ export class ShopPanel extends Component {
 
         // 扣除货币
         if (item.priceType === 'coin') {
-            this._coins -= item.price;
+            DataManager.getInstance().deductCoins(item.price);
         } else {
             this._gems -= item.price;
         }
