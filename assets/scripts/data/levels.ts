@@ -6,6 +6,7 @@
 import { OperationType } from './LevelData';
 import { ITEM_TYPES, LevelDataConfig } from './types';
 import { CHAPTER_2_LEVELS, LEVEL_2_1 } from './chapter2Levels';
+import { CHAPTER_3_LEVELS, LEVEL_3_1 } from './chapter3Levels';
 
 const BOOK = ITEM_TYPES.BOOK;
 const PEN = ITEM_TYPES.PEN;
@@ -549,6 +550,7 @@ export const LEVEL_MAP: Record<number, LevelDataConfig> = {
     4: LEVEL_1_4,
     5: LEVEL_1_5,
     201: LEVEL_2_1,
+    301: LEVEL_3_1,
 };
 
 export function getLevelConfig(levelId: number): LevelDataConfig | undefined {
@@ -556,5 +558,5 @@ export function getLevelConfig(levelId: number): LevelDataConfig | undefined {
 }
 
 export function getChapterLevels(chapter: number): LevelDataConfig[] {
-    return [...CHAPTER_1_LEVELS, ...CHAPTER_2_LEVELS].filter(level => level.chapter === chapter);
+    return [...CHAPTER_1_LEVELS, ...CHAPTER_2_LEVELS, ...CHAPTER_3_LEVELS].filter(level => level.chapter === chapter);
 }

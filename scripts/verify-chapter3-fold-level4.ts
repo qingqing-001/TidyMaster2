@@ -108,23 +108,27 @@ class FoldVerificationHarness {
 
 function runChecks(): CheckResult[] {
     const results: CheckResult[] = [];
-    const verifier = new FoldVerificationHarness(4);
+    // 使用真实第3章折叠关 (level 301)
+    const verifier = new FoldVerificationHarness(301);
     const { levelConfig, levelDefinition } = verifier.load();
 
+    // 1. 验证真实关卡入口：getLevelConfig(301) 命中第3章折叠关
     results.push({
-        name: '真实关卡入口：getLevelConfig(4)',
-        passed: levelConfig.id === 4 && levelConfig.sceneDisplayName === '衣服折叠',
+        name: '真实关卡入口：getLevelConfig(301) 命中第3章折叠关',
+        passed: levelConfig.id === 301 && levelConfig.chapter === 3 && levelConfig.sceneDisplayName === '衣柜折叠',
         detail: `命中关卡 ${levelConfig.id}，章节=${levelConfig.chapter}，场景=${levelConfig.sceneDisplayName}`,
     });
 
+    // 2. 验证真实配置包含可执行的 fold 物品/槽位配置
     const foldItems = levelConfig.items.filter((item) => item.operation === OperationType.FOLD);
     const allFoldSlotsExist = foldItems.every((item) => levelConfig.slots.some((slot) => slot.id === item.targetSlotId));
     results.push({
-        name: '真实第3章折叠教学关配置可读取完整折叠目标',
+        name: '真实第3章折叠关配置可读取完整折叠目标',
         passed: foldItems.length === levelConfig.items.length && foldItems.length > 0 && allFoldSlotsExist,
         detail: `折叠物品=${foldItems.length}，槽位映射完整=${allFoldSlotsExist}，operations=${levelConfig.operations.join(',')}`,
     });
 
+    // 3. 验证 LevelManager.loadFromConfig 保留真实操作接线
     const levelOperations = [...levelDefinition.operations].sort().join(',');
     results.push({
         name: 'LevelManager.loadFromConfig 保留真实操作接线',
@@ -133,6 +137,7 @@ function runChecks(): CheckResult[] {
         detail: `requiredItems=${levelDefinition.requiredItems}，operations=${levelOperations}`,
     });
 
+    // 4. 验证统一 operation 接线可回查真实 item/slot 配置
     const sampleFoldItem = foldItems[0];
     const sampleFoldSlot = levelConfig.slots.find((slot) => slot.id === sampleFoldItem.targetSlotId)!;
     const resolvedItemConfig = verifier['levelManager'].getItemConfig(sampleFoldItem.id);
@@ -144,15 +149,18 @@ function runChecks(): CheckResult[] {
         detail: `item=${sampleFoldItem.id}/${resolvedItemConfig?.operation} -> slot=${resolvedSlotConfig?.id}(${resolvedSlotConfig?.label ?? '无标签'})`,
     });
 
+    // 5. 验证折叠步数来自真实槽位尺寸推导
     const foldStepCount = verifier.resolveFoldStepCount(sampleFoldSlot.size);
+    const expectedStepCount = sampleFoldSlot.size.w >= 110 || sampleFoldSlot.size.h >= 110 ? 4 : 3;
     results.push({
         name: '折叠步数来自真实槽位尺寸推导',
-        passed: foldStepCount === 3,
+        passed: foldStepCount === expectedStepCount,
         detail: `槽位尺寸=${sampleFoldSlot.size.w}x${sampleFoldSlot.size.h}，foldSteps=${foldStepCount}`,
     });
 
+    // 6. 验证折叠进度事件可推动教学进度文本
     verifier.handleOperationProgress({
-        levelId: 4,
+        levelId: 301,
         itemId: sampleFoldItem.id,
         slotId: sampleFoldSlot.id,
         operation: OperationType.FOLD,
@@ -165,9 +173,10 @@ function runChecks(): CheckResult[] {
         detail: `activeText=${verifier.buildActiveOperationText() || '(empty)'}`,
     });
 
+    // 7. 验证折叠完成事件可推进真实关卡完成判定
     for (const item of foldItems) {
         verifier.handleOperationComplete({
-            levelId: 4,
+            levelId: 301,
             itemId: item.id,
             slotId: item.targetSlotId,
             operation: OperationType.FOLD,
