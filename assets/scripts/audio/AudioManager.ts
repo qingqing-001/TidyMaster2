@@ -29,7 +29,9 @@ const SFX_RESOURCE_MAP: Record<string, string> = {
   sfx_item_pickup: 'audio/sfx_item_pickup',
   sfx_item_place: 'audio/sfx_item_place',
   sfx_item_wrong: 'audio/sfx_item_wrong',
-  sfx_item_bounce: 'audio/sfx_item_bounce'
+  sfx_item_bounce: 'audio/sfx_item_bounce',
+  sfx_merge_success: 'audio/sfx_merge',
+  sfx_tool_upgrade: 'audio/sfx_tool_upgrade'
 };
 
 /**
@@ -151,6 +153,20 @@ export class AudioManager {
    */
   public playBounce(): void {
     this.playSFX('sfx_item_bounce');
+  }
+
+  /**
+   * 播放合成成功音效
+   */
+  public playMergeSuccess(): void {
+    this.playSFX('sfx_merge_success');
+  }
+
+  /**
+   * 播放工具升级音效
+   */
+  public playToolUpgrade(): void {
+    this.playSFX('sfx_tool_upgrade');
   }
 
   /**

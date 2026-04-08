@@ -16,7 +16,9 @@
     "paths": {
       "@/*": ["./assets/scripts/*"]
     },
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["./assets/scripts/**/*"],
   "exclude": ["node_modules", "temp", "build"]

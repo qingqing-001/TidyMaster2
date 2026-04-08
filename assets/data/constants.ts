@@ -14,6 +14,7 @@ export const GAME_EVENTS = {
   SCORE_UPDATED: 'score-updated',
   TIME_WARNING: 'time-warning',
   TOOL_UPGRADED: 'tool-upgraded',
+  TOOL_DRAG_END: 'tool:drag-end',
   ACHIEVEMENT_UNLOCKED: 'achievement-unlocked',
   COLLECTION_UPDATE: 'collection-update',
   CHAPTER_UNLOCKED: 'chapter-unlocked',

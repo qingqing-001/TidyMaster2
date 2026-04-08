@@ -107,6 +107,21 @@ declare module 'cc' {
     layer: number;
     constructor(name?: string);
 
+    // 事件类型 - 作为实例属性和命名空间
+    readonly EventType: {
+      TOUCH_START: string;
+      TOUCH_MOVE: string;
+      TOUCH_END: string;
+      TOUCH_CANCEL: string;
+      MOUSE_DOWN: string;
+      MOUSE_MOVE: string;
+      MOUSE_UP: string;
+      MOUSE_LEAVE: string;
+      MOUSE_ENTER: string;
+      MOUSE_WHEEL: string;
+    };
+
+    // 静态事件类型
     static readonly EventType: {
       TOUCH_START: string;
       TOUCH_MOVE: string;
@@ -137,11 +152,12 @@ declare module 'cc' {
     isValid: boolean;
     setAnchorPoint(x: number | Vec2, y?: number): void;
     getAnchorPoint(): Vec2;
+    clone(): Node;
 
-    // 事件
-    on(type: string, callback: Function, target?: any, useCapture?: boolean): void;
-    off(type: string, callback?: Function, target?: any): void;
-    once(type: string, callback: Function, target?: any): void;
+    // 事件 - 支持字符串和EventType
+    on(type: string | Node['EventType'], callback: Function, target?: any, useCapture?: boolean): void;
+    off(type: string | Node['EventType'], callback?: Function, target?: any): void;
+    once(type: string | Node['EventType'], callback: Function, target?: any): void;
     emit(type: string, ...args: any[]): void;
     targetOff(target: any): void;
   }
