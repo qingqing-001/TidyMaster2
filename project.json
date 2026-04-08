@@ -1,5 +1,6 @@
 {
   "version": "3.8.6",
+  "engineVersion": "3.8.6",
   "name": "tidy-master",
   "uuid": "d89c1e10-1e12-4e88-a9b8-8c3b1d5e6f7a",
   "type": "2d",
