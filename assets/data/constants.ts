@@ -25,6 +25,7 @@ export const GAME_EVENTS = {
   OPERATION_PROGRESS: 'operation:progress',
   LEVEL: 'level',
   COIN_CHANGE: 'coin-change',
+  COMBO_CHANGE: 'combo-change',
 } as const;
 
 export const GAME_CONFIG = {

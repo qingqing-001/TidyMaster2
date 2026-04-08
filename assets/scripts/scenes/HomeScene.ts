@@ -290,7 +290,7 @@ export class HomeScene extends Component {
     /**
      * 金币变化回调
      */
-    private onCoinChange(data: { amount: number; currentCoins: number; type: string }): void {
+    private onCoinChange(data?: { amount: number; currentCoins: number; type: string }): void {
         console.log('[HomeScene] 金币变化:', data);
         this.updateCoinDisplay();
     }

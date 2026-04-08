@@ -242,7 +242,8 @@ export class DragHandler extends Component {
     tween(this.node)
       .to(0.3, { position: targetPos }, { easing: easing.backOut })
       .call(() => {
-        this.audioManager.playSFX('sfx_item_place');
+        // 播放连击音效（带音高递增效果）
+        this.audioManager.playCombo();
         ParticleEffects.showSuccessParticles(this.node.worldPosition);
 
         if (this.itemController) {

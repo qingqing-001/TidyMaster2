@@ -1,5 +1,6 @@
 import { AudioClip, resources } from 'cc';
-import { GAME_CONFIG } from '../../data/constants';
+import { GAME_CONFIG, GAME_EVENTS } from '../../data/constants';
+import { EventManager } from '../core/EventManager';
 
 type AudioContextLike = {
   currentTime: number;
@@ -48,6 +49,11 @@ export class AudioManager {
   private sfxClips: Map<string, CachedSFXClip> = new Map();
   private pendingLoads: Map<string, Promise<CachedSFXClip | null>> = new Map();
   private webAudioContext: AudioContextLike | null = null;
+
+  // Combo连击相关
+  private comboCount: number = 0;
+  private comboTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly COMBO_TIMEOUT_MS = 2000; // 2秒内连续成功归位算连击
 
   public static getInstance(): AudioManager {
     if (AudioManager.instance === null) {
@@ -167,6 +173,223 @@ export class AudioManager {
    */
   public playToolUpgrade(): void {
     this.playSFX('sfx_tool_upgrade');
+  }
+
+  /**
+   * 播放连击音效（带音高递增）
+   * combo 1-3: 正常音调 (1.0)
+   * combo 4-6: 稍高音调 (1.1-1.2)
+   * combo 7-9: 更高音调 (1.3-1.4)
+   * combo 10+: 最高音调 (1.5)
+   */
+  public playCombo(): void {
+    // 增加连击计数
+    this.comboCount++;
+
+    // 清除之前的计时器
+    if (this.comboTimer) {
+      clearTimeout(this.comboTimer);
+    }
+
+    // 设置2秒超时，超时后重置连击
+    this.comboTimer = setTimeout(() => {
+      this.resetCombo();
+    }, this.COMBO_TIMEOUT_MS);
+
+    // 计算音高倍率
+    const playbackRate = this.getComboPlaybackRate();
+
+    // 发送连击事件
+    try {
+      const eventManager = EventManager.getInstance();
+      eventManager.emit(GAME_EVENTS.COMBO_CHANGE, {
+        comboCount: this.comboCount,
+        playbackRate: playbackRate
+      });
+    } catch (e) {
+      // EventManager可能未初始化，忽略
+    }
+
+    if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+      console.log(`[AudioManager] 播放连击音效: combo=${this.comboCount}, rate=${playbackRate}`);
+    }
+
+    // 播放带音高调整的音效
+    this.playSFXWithPlaybackRate('sfx_item_place', playbackRate);
+  }
+
+  /**
+   * 根据连击数获取音高倍率
+   */
+  private getComboPlaybackRate(): number {
+    if (this.comboCount <= 3) {
+      return 1.0;
+    } else if (this.comboCount <= 6) {
+      return 1.0 + (this.comboCount - 3) * 0.1; // 1.1 - 1.2
+    } else if (this.comboCount <= 9) {
+      return 1.2 + (this.comboCount - 6) * 0.1; // 1.3 - 1.4
+    } else {
+      return 1.5; // 最高音调
+    }
+  }
+
+  /**
+   * 使用指定音高倍率播放音效
+   */
+  private playSFXWithPlaybackRate(name: string, playbackRate: number): void {
+    if (!this.enabled) {
+      return;
+    }
+
+    const cachedClip = this.sfxClips.get(name);
+    if (cachedClip) {
+      void this.playAudioClipWithRate(cachedClip, name, playbackRate);
+      return;
+    }
+
+    void this.loadSFXClip(name).then((clip) => {
+      if (clip && this.enabled) {
+        void this.playAudioClipWithRate(clip, name, playbackRate);
+      }
+    });
+  }
+
+  /**
+   * 使用指定音高倍率播放音频片段
+   */
+  private async playAudioClipWithRate(clip: CachedSFXClip, name: string, playbackRate: number): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
+    if (clip instanceof AudioClip) {
+      const nativeUrl = this.getNativeAudioUrl(clip, name);
+      if (nativeUrl) {
+        const played = await this.playHtmlAudioWithRate(nativeUrl, name, playbackRate);
+        if (played) {
+          return;
+        }
+      }
+
+      const resourcePath = SFX_RESOURCE_MAP[name];
+      if (resourcePath) {
+        const arrayBuffer = await this.loadNativeAudioBuffer(resourcePath);
+        if (arrayBuffer) {
+          this.sfxClips.set(name, arrayBuffer);
+          await this.playArrayBufferWithRate(arrayBuffer, name, playbackRate);
+          return;
+        }
+      }
+
+      if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+        console.warn(`[AudioManager] AudioClip loaded but no playable native source found: ${name}`);
+      }
+      return;
+    }
+
+    if (clip instanceof ArrayBuffer) {
+      await this.playArrayBufferWithRate(clip, name, playbackRate);
+      return;
+    }
+
+    await this.resumeAudioContextIfNeeded();
+    this.playDecodedBufferWithRate(clip, name, playbackRate);
+  }
+
+  /**
+   * 使用HTML Audio播放并调整音高
+   */
+  private async playHtmlAudioWithRate(url: string, name: string, playbackRate: number): Promise<boolean> {
+    if (typeof Audio === 'undefined') {
+      return false;
+    }
+
+    try {
+      const audio = new Audio(url);
+      audio.volume = this.sfxVolume;
+      audio.playbackRate = playbackRate;
+      audio.preload = 'auto';
+      const playResult = audio.play();
+      if (playResult && typeof playResult.then === 'function') {
+        await playResult;
+      }
+
+      if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+        console.log(`[AudioManager] Playing SFX via HTMLAudioElement with rate ${playbackRate}: ${name}`);
+      }
+      return true;
+    } catch (error) {
+      if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+        console.warn(`[AudioManager] HTMLAudioElement playback failed: ${name}`, error);
+      }
+      return false;
+    }
+  }
+
+  /**
+   * 使用ArrayBuffer播放并调整音高
+   */
+  private async playArrayBufferWithRate(buffer: ArrayBuffer, name: string, playbackRate: number): Promise<void> {
+    const context = this.getAudioContext();
+    if (!context) {
+      return;
+    }
+
+    try {
+      await this.resumeAudioContextIfNeeded();
+      const decoded = await context.decodeAudioData(buffer.slice(0));
+      this.sfxClips.set(name, decoded);
+      this.playDecodedBufferWithRate(decoded, name, playbackRate);
+    } catch (error) {
+      if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+        console.warn(`[AudioManager] Failed to decode SFX array buffer: ${name}`, error);
+      }
+    }
+  }
+
+  /**
+   * 使用WebAudio播放并调整音高
+   */
+  private playDecodedBufferWithRate(buffer: AudioBuffer, name: string, playbackRate: number): void {
+    const context = this.getAudioContext();
+    if (!context) {
+      return;
+    }
+
+    const source = context.createBufferSource();
+    const gainNode = context.createGain();
+    source.buffer = buffer;
+    source.playbackRate.value = playbackRate; // 关键：设置音高
+    gainNode.gain.value = this.sfxVolume;
+    source.connect(gainNode);
+    gainNode.connect(context.destination as AudioNode);
+    source.start(0);
+
+    if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+      console.log(`[AudioManager] Playing SFX via WebAudio with rate ${playbackRate}: ${name}`);
+    }
+  }
+
+  /**
+   * 重置连击计数
+   */
+  public resetCombo(): void {
+    this.comboCount = 0;
+    if (this.comboTimer) {
+      clearTimeout(this.comboTimer);
+      this.comboTimer = null;
+    }
+
+    if (GAME_CONFIG.ENABLE_DEBUG_LOG) {
+      console.log('[AudioManager] 连击计数已重置');
+    }
+  }
+
+  /**
+   * 获取当前连击数
+   */
+  public getComboCount(): number {
+    return this.comboCount;
   }
 
   /**
