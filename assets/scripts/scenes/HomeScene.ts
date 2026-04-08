@@ -2,7 +2,7 @@ import { _decorator, Component, Node, Sprite, Label, Button, Color } from 'cc';
 import { DataManager, PlayerProgress } from '../core/DataManager';
 import { AudioManager } from '../audio/AudioManager';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS } from '../data/Constants';
+import { GAME_EVENTS } from '../data/constants';
 import { getLevelConfig, CHAPTER_1_LEVELS } from '../data/levels';
 import type { LevelDataConfig } from '../data/types';
 

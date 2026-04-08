@@ -3,7 +3,7 @@ import { AudioManager } from '../audio/AudioManager';
 import { DataManager } from './DataManager';
 import { EventManager } from './EventManager';
 import { LevelManager } from '../gameplay/LevelManager';
-import { GAME_CONFIG, GAME_EVENTS } from '../../data/Constants';
+import { GAME_CONFIG, GAME_EVENTS } from '../../data/constants';
 import { PlatformAdapter } from '../platform/PlatformAdapter';
 import { WxAdapter } from '../platform/WxAdapter';
 

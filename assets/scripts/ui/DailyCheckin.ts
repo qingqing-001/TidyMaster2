@@ -2,7 +2,7 @@ import { _decorator, Component, Node, Label, Button, Color } from 'cc';
 import { DataManager } from '../core/DataManager';
 import { AudioManager } from '../audio/AudioManager';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS } from '../data/Constants';
+import { GAME_EVENTS } from '../data/constants';
 
 const { ccclass, property } = _decorator;
 

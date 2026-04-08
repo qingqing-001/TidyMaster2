@@ -5,7 +5,7 @@
 
 import { _decorator, Component, Node, Sprite, Label, UITransform, Vec3, v3, Color } from 'cc';
 import { EventManager } from '../core/EventManager';
-import { GAME_EVENTS } from '../data/Constants';
+import { GAME_EVENTS } from '../data/constants';
 import { getLevelConfig } from '../data/levels';
 import { OperationType } from '../data/LevelData';
 
