@@ -26,6 +26,12 @@ export const GAME_EVENTS = {
   LEVEL: 'level',
   COIN_CHANGE: 'coin-change',
   COMBO_CHANGE: 'combo-change',
+  ALBUM_ITEM_COLLECTED: 'album:item-collected',
+  ALBUM_MILESTONE_REACHED: 'album:milestone-reached',
+  ACHIEVEMENT_PROGRESS_UPDATE: 'achievement:progress-update',
+  SEASON_PASS_EXP_GAINED: 'season-pass:exp-gained',
+  SEASON_PASS_LEVEL_UP: 'season-pass:level-up',
+  ROOM_DECORATION_PLACED: 'room:decoration-placed',
 } as const;
 
 export const GAME_CONFIG = {
