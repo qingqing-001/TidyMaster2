@@ -14,20 +14,26 @@ TidyMaster 是一款基于 Cocos Creator 3.8.6 开发的微信小游戏，核心
 
 ## 项目结构
 
+当前仓库中与代码、资源和验证相关的主要目录如下：
+
 - `assets/scripts/` - TypeScript 源代码
-  - `core/` - 核心管理器（GameManager、AudioManager、DataManager、EventManager、ResourceManager、AdManager）
+  - `audio/` - 音频管理实现
+  - `collection/` - 图鉴、成就、赛季与房间装饰等系统
+  - `core/` - 核心管理器与事件载荷定义
+  - `data/` - 关卡、常量、成就与类型数据
+  - `effects/` - 粒子、屏幕效果与 Tween 预设
+  - `gameplay/` - 拖拽、擦拭、折叠、计时、关卡运行时逻辑
+  - `merge/` - 合成棋盘与工具合成逻辑
+  - `platform/` - 平台适配层
   - `scenes/` - 场景控制器
-  - `gameplay/` - 游戏玩法逻辑
-  - `merge/` - 合成玩法
-  - `collection/` - 收集系统
-  - `social/` - 社交功能
+  - `social/` - 分享、排行、好友辅助
   - `ui/` - UI 组件
-  - `effects/` - 特效
-  - `data/` - 数据定义
   - `utils/` - 工具函数
-- `assets/resources/` - 资源文件
-- `assets/scenes/` - Cocos 场景文件
-- `assets/sub/` - 微信分包
+- `assets/resources/audio/` - 已跟踪的音频资源目录
+- `assets/scenes/` - Cocos 场景目录
+- `scripts/` - CLI 校验与历史验证脚本
+- `types/` - 类型声明
+- `weapp/` - 微信小游戏侧工程目录
 
 ## 开发说明
 

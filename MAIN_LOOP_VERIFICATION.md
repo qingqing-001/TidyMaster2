@@ -1,8 +1,8 @@
-# 主循环闭环 CLI 复核结果（issue #108 / #112）
+# 主循环闭环 CLI 复核结果
 
 ## 目的
 
-统一“主循环闭环”命令行验证入口，确保 README、`package.json` scripts、验证脚本真实输出三者口径一致，并明确 `verify:main-loop` 才是唯一正式主循环验证入口。
+提供一个可在仓库内独立复核的主循环验证记录，说明唯一正式入口、验证范围、实测结果与脚本行为，不依赖外部 issue 或沟通上下文。
 
 ## 唯一正式主循环验证入口
 
@@ -63,7 +63,7 @@ npm run verify:main-loop
   "loadSceneCalls": ["Game", "Result", "Home", "Game"],
   "completion": {
     "stars": 3,
-    "sourceLevelId": 1,
+    "levelId": 1,
     "sceneDisplayName": "书桌整理",
     "rewardCoins": 50,
     "nextLevelId": 2
@@ -103,6 +103,18 @@ npm run verify:main-loop
 
 另外，验证脚本会在启动前显式关闭 `AudioManager`，避免 Node 环境下触发原生音频资源 URL 解析，从而消除此前 `ERR_INVALID_URL` / `Failed to parse URL` 噪音日志；该调整没有删除真实音频依赖，只是在 CLI 验证场景中沿用项目已有的音频开关能力，保证主循环验证输出干净可复核。
 
+## 验证脚本设计说明
+
+正式脚本当前通过公开事件流与公开场景方法驱动主循环；其 Node CLI 驱动方式如下：
+
+- 使用 `HomeScene.onLoad()` 完成主页初始化；当前 CLI 最小环境不会额外调用 `HomeScene.start()`，因为主循环断言不依赖其 UI 事件注册
+- 使用公开方法 `HomeScene.enterLevel(levelId)` 触发进入关卡
+- 通过 `GAME_EVENTS.LEVEL_COMPLETE` 向 `ResultScene` 传递结算数据
+- 使用公开方法 `ResultScene.onBackHome()` 驱动返回主页
+- 再次使用 `HomeScene.enterLevel(nextLevelId)` 验证下一关可继续进入
+
+脚本会为 Node CLI 环境补齐最小内存版 `localStorage`，并关闭音频播放；这些适配只用于提供运行环境，不依赖私有方法名、私有注册函数或运行时 monkey patch 去强行调用主逻辑。
+
 ## 一致性结论
 
 本次已确认以下口径一致：
@@ -114,10 +126,9 @@ npm run verify:main-loop
 
 ## 结论
 
-issue #108 / #112 所要求的“真实主循环验证与唯一正式入口收口”现已可复核：
+当前仓库已可在不依赖外部 tracker 上下文的前提下，直接用以下顺序复核最小主循环闭环：
 
-- 保留的正式入口：`npm run verify:main-loop`
-- 降级的历史入口：`npm run archive:verify:chapter4`、`npm run archive:verify:chapter5`、`npm run archive:verify:chapter6`、`npm run archive:verify:level-counts`、`npm run archive:verify:runtime-access`、`npm run archive:verify:level-progression`、`npm run archive:verify:demo`、`npm run archive:verify:init`、`npm run archive:verify:level-system`、`npm run archive:verify:milestone`
-- 被文档引用但现已应删除的旧入口：`verify:chapter4`、`verify:chapter5`、`verify:chapter6`、`verify:level-counts`、`verify:runtime-access`、`verify:level-progression`
-- `npm run type-check` 仅作为前置检查
-- 主循环实际闭环已统一表述为：`Game -> Result -> Home -> Game(下一关)`
+1. `npm run type-check`
+2. `npm run verify:main-loop`
+
+主循环实际闭环统一表述为：`Game -> Result -> Home -> Game(下一关)`

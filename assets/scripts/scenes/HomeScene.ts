@@ -62,6 +62,8 @@ export class HomeScene extends Component {
     private playerProgress: PlayerProgress | null = null;
     private levelButtons: Node[] = [];
     private dailyCheckinComp: DailyCheckin | null = null;
+    private _boundLevelComplete = (payload?: LevelCompletePayload) => this.onLevelComplete(payload);
+    private _boundCoinChange = (payload?: { amount: number; currentCoins: number; type: string }) => this.onCoinChange(payload);
 
     onLoad() {
         // 初始化数据管理器
@@ -81,8 +83,8 @@ export class HomeScene extends Component {
     start() {
         // 监听事件
         const eventManager = EventManager.getInstance();
-        eventManager.on(GAME_EVENTS.LEVEL_COMPLETE, this.onLevelComplete);
-        eventManager.on(GAME_EVENTS.COIN_CHANGE, this.onCoinChange);
+        eventManager.on(GAME_EVENTS.LEVEL_COMPLETE, this._boundLevelComplete);
+        eventManager.on(GAME_EVENTS.COIN_CHANGE, this._boundCoinChange);
 
         // 绑定按钮事件
         this.bindButtonEvents();
@@ -110,7 +112,6 @@ export class HomeScene extends Component {
      */
     private showLevelSelect(): void {
         if (!this.levelGrid) {
-            console.warn('[HomeScene] levelGrid 节点未配置');
             return;
         }
 
@@ -500,7 +501,7 @@ export class HomeScene extends Component {
     onDestroy() {
         // 移除事件监听
         const eventManager = EventManager.getInstance();
-        eventManager.off(GAME_EVENTS.LEVEL_COMPLETE, this.onLevelComplete);
-        eventManager.off(GAME_EVENTS.COIN_CHANGE, this.onCoinChange);
+        eventManager.off(GAME_EVENTS.LEVEL_COMPLETE, this._boundLevelComplete);
+        eventManager.off(GAME_EVENTS.COIN_CHANGE, this._boundCoinChange);
     }
 }

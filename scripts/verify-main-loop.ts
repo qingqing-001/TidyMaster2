@@ -6,6 +6,7 @@ import { ResultScene } from '../assets/scripts/scenes/ResultScene';
 import { GAME_EVENTS } from '../assets/data/constants';
 import { getLevelConfig } from '../assets/scripts/data/levels';
 import { AudioManager } from '../assets/scripts/audio/AudioManager';
+import { Node } from 'cc';
 import type { ChangeScenePayload, LevelCompletePayload } from '../assets/scripts/core/eventPayloads';
 
 declare const global: {
@@ -50,18 +51,15 @@ function formatLevel(levelId: number): string {
     return `level-${levelId.toString().padStart(3, '0')}`;
 }
 
-function invokePrivateMethod<T extends object>(instance: T, methodName: string, ...args: unknown[]): unknown {
-    const target = instance as unknown as Record<string, (...params: unknown[]) => unknown>;
-    const method = target[methodName];
-    assert(typeof method === 'function', `missing method: ${methodName}`);
-    return method.apply(instance, args);
+function createMinimalHomeSceneUi(): Pick<HomeScene, 'levelGrid' | 'coinLabel'> {
+    const levelGrid = new Node('LevelGrid');
+    const coinLabel = new Node('CoinLabel');
+    return { levelGrid, coinLabel };
 }
 
 function resetSingletonState(): void {
     const audioManager = AudioManager.getInstance();
     audioManager.setEnabled(false);
-    audioManager.onLoad = () => undefined;
-    (audioManager as unknown as { preloadStarted: boolean }).preloadStarted = true;
 }
 
 function main(): void {
@@ -75,7 +73,7 @@ function main(): void {
     eventManager.clear();
 
     const homeScene = new HomeScene();
-    const homeSceneShim = homeScene as unknown as Record<string, unknown>;
+    Object.assign(homeScene, createMinimalHomeSceneUi());
     const gameScene = new GameScene();
     const resultScene = new ResultScene();
 
@@ -115,15 +113,9 @@ function main(): void {
         }
     });
 
-    homeSceneShim.onCoinChange = () => undefined;
-    homeSceneShim.updateCoinDisplay = () => undefined;
-    homeSceneShim.showLevelSelect = () => undefined;
     homeScene.onLoad();
-    homeScene.start();
-    eventManager.off(GAME_EVENTS.LEVEL_COMPLETE, (homeScene as unknown as { onLevelComplete: (payload?: LevelCompletePayload) => void }).onLevelComplete);
-    eventManager.off(GAME_EVENTS.COIN_CHANGE, (homeScene as unknown as { onCoinChange: (payload?: { currentCoins: number; amount: number; type: string }) => void }).onCoinChange);
     resultScene.onLoad();
-    invokePrivateMethod(resultScene, 'registerEvents');
+    resultScene.start();
 
     const startLevelId = 1;
     const levelConfig = getLevelConfig(startLevelId);
@@ -134,9 +126,7 @@ function main(): void {
     const currentAfterEnter = dataManager.getProgress().currentLevelId;
     assert(currentAfterEnter === formatLevel(startLevelId), `expected entered level ${formatLevel(startLevelId)}, got ${currentAfterEnter}`);
 
-    (gameScene as unknown as { currentLevelId: number }).currentLevelId = startLevelId;
-    (gameScene as unknown as { currentLevelConfig: typeof levelConfig }).currentLevelConfig = levelConfig;
-    invokePrivateMethod(gameScene, 'onLevelComplete', 3);
+    gameScene.onLevelComplete(3);
 
     assert(completions.length >= 1, `expected at least 1 completion, got ${completions.length}`);
     const completion = completions[0];

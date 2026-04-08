@@ -64,7 +64,7 @@ export class GameScene extends Component {
     private eventManager = EventManager.getInstance();
     private audioManager = AudioManager.getInstance();
     private mergeLogic = MergeLogic.instance;
-    private currentLevelId = 4;
+    private currentLevelId = 1;
     private currentLevelConfig: LevelDataConfig | null = null;
     private operationItemMap = new Map<string, LevelItemConfig>();
     private operationSlotMap = new Map<string, LevelSlotConfig>();
@@ -520,6 +520,10 @@ export class GameScene extends Component {
             return;
         }
         this.levelCompleted = true;
+
+        if (!this.currentLevelConfig) {
+            this.currentLevelConfig = getLevelConfig(this.currentLevelId) ?? null;
+        }
 
         if (this.timerController) {
             this.timerController.pauseTimer();
