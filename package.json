@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "type-check": "tsc --noEmit",
-    "verify:level201": "npx tsc scripts/verify-chapter2-level201.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-level201 && node .tmp/verify-level201/scripts/verify-chapter2-level201.js"
+    "verify:level201": "npx tsc scripts/verify-chapter2-level201.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-level201 && node .tmp/verify-level201/scripts/verify-chapter2-level201.js",
+    "verify:level4-fold": "npx tsc scripts/verify-chapter3-fold-level4.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-level4-fold && node .tmp/verify-level4-fold/scripts/verify-chapter3-fold-level4.js"
   },
   "dependencies": {},
   "devDependencies": {
