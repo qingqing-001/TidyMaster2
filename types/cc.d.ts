@@ -413,6 +413,17 @@ declare module 'cc' {
     anchorY: number;
     priority: number;
     setContentSize(size: Size): void;
+    setContentSize(width: number, height: number): void;
+  }
+
+  // 扩展 SpriteFrame 类型
+  export interface SpriteFrame extends Asset {
+    originalSize: Size;
+    rect: any;
+    insetTop: number;
+    insetBottom: number;
+    insetLeft: number;
+    insetRight: number;
   }
 
   export class UIOpacity extends Component {

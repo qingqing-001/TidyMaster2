@@ -119,7 +119,7 @@ export class SlotController extends Component {
       return false;
     }
 
-    if (this.itemIds.length >= GAME_CONFIG.level.maxStarsPerLevel) {
+    if (this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY) {
       return false;
     }
 
@@ -150,7 +150,7 @@ export class SlotController extends Component {
   }
 
   public isFull(): boolean {
-    return this.itemIds.length >= GAME_CONFIG.level.maxStarsPerLevel;
+    return this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY;
   }
 
   public isEmpty(): boolean {

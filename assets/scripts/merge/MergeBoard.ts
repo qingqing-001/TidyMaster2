@@ -33,7 +33,7 @@ export class MergeBoard extends Component {
     emptySlotSprite: Sprite | null = null;
 
     private _slots: (ToolItem | null)[][] = [];
-    private _slotNodes: Node[][] = [];
+    private _slotNodes: (Node | null)[][] = [];
     private mergeLogic!: MergeLogic;
     private audioManager!: AudioManager;
     private eventManager!: EventManager;

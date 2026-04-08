@@ -21,12 +21,17 @@ export const GAME_EVENTS = {
   AUDIO_TOGGLE: 'audio:toggle',
   CHANGE_SCENE: 'change-scene',
   OPEN_MERGE_PANEL: 'open-merge-panel',
+  OPERATION_COMPLETE: 'operation:complete',
+  OPERATION_PROGRESS: 'operation:progress',
+  LEVEL: 'level',
 } as const;
 
 export const GAME_CONFIG = {
   DEFAULT_LEVEL_ID: 'level-001',
   SLOT_CAPACITY: 7,
   ENABLE_DEBUG_LOG: true,
+  level: 'level',
+  maxStarsPerLevel: 3,
 } as const;
 
 export type GameEventKey = typeof GAME_EVENTS[keyof typeof GAME_EVENTS];

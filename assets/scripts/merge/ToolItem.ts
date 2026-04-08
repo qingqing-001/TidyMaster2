@@ -42,11 +42,11 @@ export class ToolItem extends Component {
         7: '终极收纳大师'
     };
 
-    private audioManager: AudioManager;
-    private eventManager: EventManager;
+    private audioManager!: AudioManager;
+    private eventManager!: EventManager;
     private isDragging: boolean = false;
     private originalPosition: Vec3 = v3(0, 0, 0);
-    private mergeLogic: MergeLogic;
+    private mergeLogic!: MergeLogic;
 
     onLoad() {
         this.audioManager = AudioManager.getInstance();
@@ -127,8 +127,8 @@ export class ToolItem extends Component {
             return;
         }
 
-        resources.load(resourcePath, SpriteFrame, (err, spriteFrame) => {
-            if (err) {
+        resources.load(resourcePath, SpriteFrame, (err, asset) => {
+            if (err || !asset) {
                 console.warn(`[ToolItem] Failed to load tool icon: ${resourcePath}`, err);
                 // 使用默认颜色作为占位符
                 this.setPlaceholderIcon();
@@ -136,7 +136,7 @@ export class ToolItem extends Component {
             }
 
             if (this.toolSprite) {
-                this.toolSprite.spriteFrame = spriteFrame;
+                this.toolSprite.spriteFrame = asset as SpriteFrame;
             }
         });
     }
