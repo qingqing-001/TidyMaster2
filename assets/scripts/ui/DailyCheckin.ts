@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Label, Button, Color } from 'cc';
+import { _decorator, Component, Node, Label, Button, Color, Sprite } from 'cc';
 import { DataManager } from '../core/DataManager';
 import { AudioManager } from '../audio/AudioManager';
 import { EventManager } from '../core/EventManager';
@@ -19,7 +19,8 @@ interface CheckinData {
     consecutiveDays: number;  // 连续签到天数
     lastCheckinDate: string;  // 上次签到日期 (YYYY-MM-DD)
     totalCheckinDays: number; // 累计签到天数
-    canCheckin: boolean;      // 今日是否可签到
+    toolFragments: number;    // 工具碎片数量
+    gems: number;             // 宝石数量
 }
 
 const CHECKIN_REWARDS: CheckinReward[] = [
@@ -31,6 +32,9 @@ const CHECKIN_REWARDS: CheckinReward[] = [
     { day: 6, rewardId: 'coin_300', rewardAmount: 300, rewardType: 'coin' },
     { day: 7, rewardId: 'gem_10', rewardAmount: 10, rewardType: 'gem' },
 ];
+
+// 存储键名
+const STORAGE_KEY = 'tidy_master_checkin';
 
 /**
  * 每日签到组件
@@ -55,6 +59,8 @@ export class DailyCheckin extends Component {
     private _consecutiveDays: number = 0;
     private _lastCheckinDate: string = '';
     private _totalCheckinDays: number = 0;
+    private _toolFragments: number = 0;
+    private _gems: number = 0;
     private _checkinData: CheckinData | null = null;
 
     // 获取今天是第几天 (1-7)
@@ -77,23 +83,53 @@ export class DailyCheckin extends Component {
     }
 
     /**
-     * 加载签到数据
+     * 加载签到数据 (本地存储)
      */
     private loadCheckinData(): void {
-        // 从DataManager或本地存储加载
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                const data = JSON.parse(stored);
+                this._consecutiveDays = data.consecutiveDays || 0;
+                this._lastCheckinDate = data.lastCheckinDate || '';
+                this._totalCheckinDays = data.totalCheckinDays || 0;
+                this._toolFragments = data.toolFragments || 0;
+                this._gems = data.gems || 0;
+            }
+        } catch (e) {
+            console.error('[DailyCheckin] 加载签到数据失败:', e);
+        }
+
         this._checkinData = {
             consecutiveDays: this._consecutiveDays,
             lastCheckinDate: this._lastCheckinDate,
             totalCheckinDays: this._totalCheckinDays,
-            canCheckin: true,
+            toolFragments: this._toolFragments,
+            gems: this._gems,
         };
     }
 
     /**
-     * 保存签到数据
+     * 保存签到数据 (本地存储)
      */
     private saveCheckinData(): void {
-        console.log('[DailyCheckin] 保存签到数据:', this._checkinData);
+        try {
+            const data = {
+                consecutiveDays: this._consecutiveDays,
+                lastCheckinDate: this._lastCheckinDate,
+                totalCheckinDays: this._totalCheckinDays,
+                toolFragments: this._toolFragments,
+                gems: this._gems,
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            
+            // 同时保存到DataManager
+            DataManager.getInstance().saveCheckinData(data);
+            
+            console.log('[DailyCheckin] 保存签到数据:', data);
+        } catch (e) {
+            console.error('[DailyCheckin] 保存签到数据失败:', e);
+        }
     }
 
     /**
@@ -104,7 +140,6 @@ export class DailyCheckin extends Component {
         
         if (this._lastCheckinDate === today) {
             // 今日已签到
-            this._checkinData!.canCheckin = false;
             // 计算今天是签到周期的第几天
             this._currentDay = (this._consecutiveDays % 7) || 7;
         } else {
@@ -118,7 +153,6 @@ export class DailyCheckin extends Component {
                 this._currentDay = 1;
                 this._consecutiveDays = 0;
             }
-            this._checkinData!.canCheckin = true;
         }
     }
 
@@ -319,7 +353,8 @@ export class DailyCheckin extends Component {
             consecutiveDays: this._consecutiveDays,
             lastCheckinDate: this._lastCheckinDate,
             totalCheckinDays: this._totalCheckinDays,
-            canCheckin: false,
+            toolFragments: this._toolFragments,
+            gems: this._gems,
         };
         this.saveCheckinData();
 
@@ -346,6 +381,39 @@ export class DailyCheckin extends Component {
      */
     private grantReward(reward: CheckinReward): void {
         console.log('[DailyCheckin] 发放奖励:', reward);
+        
+        const dataManager = DataManager.getInstance();
+        
+        switch (reward.rewardType) {
+            case 'coin':
+                dataManager.addCoins(reward.rewardAmount);
+                break;
+                
+            case 'tool_fragment':
+                this._toolFragments += reward.rewardAmount;
+                console.log(`[DailyCheckin] 获得工具碎片 x${reward.rewardAmount}, 总计: ${this._toolFragments}`);
+                // 发送收集更新事件
+                const eventManager = EventManager.getInstance();
+                eventManager.emit(GAME_EVENTS.COLLECTION_UPDATE, {
+                    type: 'tool_fragment',
+                    amount: this._toolFragments,
+                });
+                break;
+                
+            case 'gem':
+                this._gems += reward.rewardAmount;
+                console.log(`[DailyCheckin] 获得宝石 x${reward.rewardAmount}, 总计: ${this._gems}`);
+                // 发送收集更新事件
+                const eventMgr = EventManager.getInstance();
+                eventMgr.emit(GAME_EVENTS.COLLECTION_UPDATE, {
+                    type: 'gem',
+                    amount: this._gems,
+                });
+                break;
+        }
+        
+        // 保存更新后的数据
+        this.saveCheckinData();
     }
 
     /**
@@ -353,6 +421,33 @@ export class DailyCheckin extends Component {
      */
     private showRewardPopup(reward: CheckinReward): void {
         console.log('[DailyCheckin] 获得奖励:', reward.rewardAmount, reward.rewardType);
+        
+        // 构建奖励显示文本
+        let rewardText = '';
+        let iconText = '';
+        switch (reward.rewardType) {
+            case 'coin':
+                iconText = '💰';
+                rewardText = `${reward.rewardAmount} 金币`;
+                break;
+            case 'tool_fragment':
+                iconText = '🔧';
+                rewardText = `工具碎片 x${reward.rewardAmount}`;
+                break;
+            case 'gem':
+                iconText = '💎';
+                rewardText = `宝石 x${reward.rewardAmount}`;
+                break;
+        }
+        
+        // 显示系统提示（实际项目中可以替换为自定义弹窗）
+        if (typeof window !== 'undefined' && (window as any).wx) {
+            // 微信小游戏环境
+            console.log(`[DailyCheckin] 获得奖励: ${rewardText}`);
+        } else {
+            // 浏览器环境
+            // alert(`${iconText} 签到成功！\n获得: ${rewardText}`);
+        }
     }
 
     /**
@@ -360,13 +455,76 @@ export class DailyCheckin extends Component {
      */
     public advertiseCheckin(): void {
         console.log('[DailyCheckin] 广告补签');
+        
+        // 检查是否已经签到过
+        if (!this.canCheckin()) {
+            console.log('[DailyCheckin] 今日已签到，无法补签');
+            return;
+        }
+
+        // 获取今日奖励
+        const reward = CHECKIN_REWARDS[this._currentDay - 1];
+        
+        // 更新签到数据（补签不增加连续天数）
+        this._totalCheckinDays++;
+        
+        // 保存数据
+        this._checkinData = {
+            consecutiveDays: this._consecutiveDays,
+            lastCheckinDate: this._lastCheckinDate,
+            totalCheckinDays: this._totalCheckinDays,
+            toolFragments: this._toolFragments,
+            gems: this._gems,
+        };
+        this.saveCheckinData();
+
+        // 发放奖励（补签奖励减半）
+        const halfReward = { ...reward, rewardAmount: Math.floor(reward.rewardAmount / 2) };
+        this.grantReward(halfReward);
+
+        // 显示奖励弹窗
+        this.showRewardPopup(halfReward);
+
+        // 更新UI
+        this.updateUI();
+
+        // 发送补签完成事件
+        const eventManager = EventManager.getInstance();
+        eventManager.emit(GAME_EVENTS.COLLECTION_UPDATE, {
+            type: 'checkin_advertise',
+            day: this._currentDay,
+            reward: halfReward,
+        });
     }
 
     /**
      * 是否可以签到
      */
     public canCheckin(): boolean {
-        return this._checkinData?.canCheckin ?? false;
+        const today = this.getTodayDate();
+        return this._lastCheckinDate !== today;
+    }
+
+    /**
+     * 检查今天是否已签到
+     */
+    public isCheckedInToday(): boolean {
+        const today = this.getTodayDate();
+        return this._lastCheckinDate === today;
+    }
+
+    /**
+     * 获取工具碎片数量
+     */
+    public getToolFragments(): number {
+        return this._toolFragments;
+    }
+
+    /**
+     * 获取宝石数量
+     */
+    public getGems(): number {
+        return this._gems;
     }
 
     /**

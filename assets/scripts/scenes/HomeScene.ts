@@ -5,6 +5,7 @@ import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../../data/constants';
 import { getLevelConfig, CHAPTER_1_LEVELS } from '../data/levels';
 import type { LevelDataConfig } from '../data/types';
+import { DailyCheckin } from '../ui/DailyCheckin';
 
 const { ccclass, property } = _decorator;
 
@@ -48,10 +49,18 @@ export class HomeScene extends Component {
     @property({ type: Node })
     public mergeBtn: Node | null = null;
 
+    // 金币显示相关
+    @property({ type: Node })
+    public coinLabel: Node | null = null;
+
+    @property({ type: Node })
+    public checkinRedDot: Node | null = null;
+
     // 数据
     private currentLevelId: number = 1;
     private playerProgress: PlayerProgress | null = null;
     private levelButtons: Node[] = [];
+    private dailyCheckinComp: DailyCheckin | null = null;
 
     onLoad() {
         // 初始化数据管理器
@@ -72,12 +81,19 @@ export class HomeScene extends Component {
         // 监听事件
         const eventManager = EventManager.getInstance();
         eventManager.on(GAME_EVENTS.LEVEL_COMPLETE, this.onLevelComplete);
+        eventManager.on(GAME_EVENTS.COIN_CHANGE, this.onCoinChange);
 
         // 绑定按钮事件
         this.bindButtonEvents();
 
+        // 更新金币显示
+        this.updateCoinDisplay();
+
         // 检查是否显示每日签到弹窗
         this.checkDailyCheckin();
+
+        // 更新签到红点显示
+        this.updateCheckinRedDot();
     }
 
     /**
@@ -225,7 +241,58 @@ export class HomeScene extends Component {
      * 检查是否显示每日签到
      */
     private checkDailyCheckin(): void {
-        // TODO: 检查是否可以签到，显示签到面板
+        // 查找签到组件
+        if (this.dailyCheckinPanel) {
+            this.dailyCheckinComp = this.dailyCheckinPanel.getComponent(DailyCheckin);
+            
+            if (this.dailyCheckinComp) {
+                // 检查今天是否可以签到
+                if (this.dailyCheckinComp.canCheckin()) {
+                    // 自动显示签到面板
+                    console.log('[HomeScene] 今日可签到，显示签到面板');
+                    this.showDailyCheckinPanel();
+                }
+            }
+        }
+    }
+
+    /**
+     * 更新金币显示
+     */
+    private updateCoinDisplay(): void {
+        if (this.coinLabel) {
+            const label = this.coinLabel.getComponent(Label);
+            if (label) {
+                const coins = DataManager.getInstance().getCoins();
+                label.string = coins.toString();
+            }
+        }
+    }
+
+    /**
+     * 更新签到红点提示
+     */
+    private updateCheckinRedDot(): void {
+        if (this.checkinRedDot && this.dailyCheckinBtn) {
+            // 查找签到面板组件
+            let checkinComp = this.dailyCheckinComp;
+            if (!checkinComp && this.dailyCheckinPanel) {
+                checkinComp = this.dailyCheckinPanel.getComponent(DailyCheckin);
+            }
+            
+            if (checkinComp) {
+                // 如果今日可签到，显示红点
+                this.checkinRedDot.active = checkinComp.canCheckin();
+            }
+        }
+    }
+
+    /**
+     * 金币变化回调
+     */
+    private onCoinChange(data: { amount: number; currentCoins: number; type: string }): void {
+        console.log('[HomeScene] 金币变化:', data);
+        this.updateCoinDisplay();
     }
 
     // ==================== 按钮回调 ====================
@@ -432,5 +499,6 @@ export class HomeScene extends Component {
         // 移除事件监听
         const eventManager = EventManager.getInstance();
         eventManager.off(GAME_EVENTS.LEVEL_COMPLETE, this.onLevelComplete);
+        eventManager.off(GAME_EVENTS.COIN_CHANGE, this.onCoinChange);
     }
 }

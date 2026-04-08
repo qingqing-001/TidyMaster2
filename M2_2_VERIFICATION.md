@@ -1,271 +1,117 @@
-# M2.2 拖拽反馈与稳定性打磨 - 验证文档
+# M2.2 合并面板功能实现 - 验证结果
 
 ## 验收标准
 
-1. **正确放置路径**：物品拖拽到正确槽位 → 吸附归位 → 音效+粒子 → 进度更新
-2. **错误放置路径**：物品拖拽到错误槽位 → 弹回 → 错误音效
-3. **取消拖拽路径**：拖拽过程中松手 → 物品返回原位置 → 无状态异常
-4. **不出现重复计数**：同一物品不会被重复计入进度
-5. **不出现空引用风险**：所有组件访问前都有空检查
-6. **音效/粒子降级**：有实例时生效，无实例时不导致流程中断
+1. **合并面板交互流畅** - 3x4 棋盘可显示和操作
+2. **工具合并逻辑正确** - 拖拽合并逻辑正确
+3. **合成成功有音效动画** - 音效和粒子正常触发
+4. **工具增益生效** - 7级工具的增益效果实际应用
 
 ---
 
 ## 代码实现验证
 
-### 1. 正确放置路径 ✅
+### ✅ 正常部分
 
-**DragHandler.ts 第 233-260 行**：
-```typescript
-private snapToSlot(): void {
-    // ... 位置计算 ...
-    tween(this.node)
-      .to(0.3, { position: targetPos }, { easing: easing.backOut })
-      .call(() => {
-        this.audioManager.playSFX('sfx_item_place');           // 音效
-        ParticleEffects.showSuccessParticles(this.node.worldPosition); // 粒子
-        // 事件发送
-        this.eventManager.emit(GAME_EVENTS.ITEM_PLACED, {...});
-      })
-      .start();
-}
-```
+#### 1. ToolItem.ts - 工具类实现
+- ✅ 1-7级工具资源映射
+- ✅ 拖拽交互 (TOUCH_START/MOVE/END/CANCEL)
+- ✅ 图标加载和占位符
+- ✅ 升级方法 `upgrade()`
+- ✅ 升级特效 (缩放动画 + 粒子)
+- ✅ 合并检查 `canMergeWith()`
+- ✅ 获取工具增益 `getToolBonus()`
 
-**GameScene.ts 第 190-197 行**：
-```typescript
-private handleItemPlaced(data: { itemId: string; slotId: string }): void {
-    this.levelManager.markItemPlaced(data.itemId);
-    this.updateProgressDisplay();
-    if (this.levelManager.isLevelComplete()) {
-        this.onLevelComplete(3);
-    }
-}
-```
+#### 2. MergeBoard.ts - 合成面板实现
+- ✅ 3x4 格子棋盘 (BOARD_WIDTH=3, BOARD_HEIGHT=4)
+- ✅ 格子数据结构初始化
+- ✅ 动态创建格子节点
+- ✅ 查找最近格子 `findNearestSlot()`
+- ✅ 执行合并 `performMerge()`
+- ✅ 交换工具 `swapTools()`
+- ✅ 放置工具 `placeTool()`
+- ✅ 公开 API 完整
 
-**验证点**：
-- ✅ `snapToSlot()` 调用 `playSFX` 和 `showSuccessParticles`
-- ✅ 触发 `ITEM_PLACED` 事件
-- ✅ GameScene 监听并更新进度
+#### 3. MergeLogic.ts - 合成逻辑
+- ✅ 7级工具合成树 (MAX_LEVEL=7)
+- ✅ 合成检查 `canMerge()`
+- ✅ 获取合成后等级 `getMergedLevel()`
+- ✅ 工具增益效果 (时间加成、自动排序、显示提示、一键整理)
 
-### 2. 错误放置路径 ✅
+#### 4. 音效和特效集成
+- ✅ sfx_merge_success 音效
+- ✅ sfx_tool_upgrade 音效
+- ✅ ParticleEffects.showSuccessParticles 粒子特效
 
-**DragHandler.ts 第 126-141 行**：
-```typescript
-if (this.targetSlot) {
-    const canPlace = this.targetSlot.canAcceptItem(itemType) && !this.targetSlot.isFull();
-    if (canPlace) {
-        this.snapToSlot();
-    } else {
-        this.audioManager.playSFX('sfx_item_wrong');  // 错误音效
-        this.bounceBack();                             // 弹回
-    }
-} else {
-    this.bounceBack();                                 // 弹回
-}
-```
+#### 5. 事件系统
+- ✅ TOOL_DRAG_END 事件
+- ✅ TOOL_UPGRADED 事件
+- ✅ constants.ts 已定义
 
-**验证点**：
-- ✅ 不匹配时调用 `playSFX('sfx_item_wrong')`
-- ✅ 调用 `bounceBack()` 返回原位置
-
-### 3. 取消拖拽路径 ✅
-
-**DragHandler.ts 第 144-152 行**：
-```typescript
-private onTouchCancel(_event: EventTouch): void {
-    if (!this.isDragging) {
-        return;
-    }
-    this.isDragging = false;
-    this.bounceBack();           // 弹回
-    this.hideAllSlotHighlights();
-}
-```
-
-**DragHandler.ts 第 119-142 行**（无目标槽位时弹回）：
-```typescript
-private onTouchEnd(_event: EventTouch): void {
-    // ...
-    if (this.targetSlot) {
-        // 检查是否可放置
-    } else {
-        this.bounceBack();       // 弹回
-    }
-    // ...
-}
-```
-
-**验证点**：
-- ✅ `onTouchCancel` 处理系统取消
-- ✅ 无有效目标槽位时弹回
-
-### 4. 重复放置防护 ✅
-
-**SlotController.ts 第 113-125 行**：
-```typescript
-public addItem(itemId: string): boolean {
-    // 检查重复添加
-    if (this.itemIds.includes(itemId)) {
-        return false;
-    }
-    if (this.itemIds.length >= GAME_CONFIG.SLOT_CAPACITY) {
-        return false;
-    }
-    this.itemIds.push(itemId);
-    return true;
-}
-```
-
-**DragHandler.ts 第 46-48 行**（已放置物品重新拖拽时移除）：
-```typescript
-if (this.itemController && this.itemController.getState() === ItemState.PLACED) {
-    this.removeFromCurrentSlot();  // 移除后再放置
-}
-```
-
-**LevelManager.ts 第 42-44 行**：
-```typescript
-public removeItem(itemId: string): void {
-    this.placedItems.delete(itemId);
-}
-```
-
-**GameScene.ts 第 202-206 行**：
-```typescript
-private handleItemRemoved(data: { itemId: string; slotId: string }): void {
-    this.levelManager.removeItem(data.itemId);
-    this.updateProgressDisplay();
-}
-```
-
-**验证点**：
-- ✅ SlotController 检查重复 itemId
-- ✅ 重新拖拽已放置物品会触发移除事件
-- ✅ LevelManager 正确更新 placedItems Set
-
-### 5. 空引用风险防护 ✅
-
-**DragHandler.ts 多处空检查**：
-```typescript
-// 第 73-84 行
-if (!this.itemController) { return; }
-const itemId = this.itemController.itemId;
-if (!itemId) { return; }
-const scene = director.getScene();
-if (!scene) { return; }
-
-// 第 158-171 行
-if (!parent) { return v3(uiPos.x, uiPos.y, 0); }
-const parentTransform = parent.getComponent(UITransform) as UITransform | null;
-if (!parentTransform) { return ... }
-
-// 第 234 行
-if (!this.targetSlot) {
-    this.bounceBack();
-    return;
-}
-```
-
-**AudioManager.ts 第 107-122 行**（降级处理）：
-```typescript
-public playSFX(name: string): void {
-    if (!this.enabled) { return; }  // 静音模式
-    const cachedClip = this.sfxClips.get(name);
-    if (cachedClip) {
-        void this.playAudioClip(cachedClip, name);
-        return;
-    }
-    // 异步加载，不阻塞
-    void this.loadSFXClip(name).then((clip) => {...});
-}
-```
-
-**ParticleEffects.ts 第 30-50 行**（静态方法空检查）：
-```typescript
-public static showSuccessParticles(position: Vec3): void {
-    const instance = ParticleEffects.instance;
-    if (!instance) { return; }  // 无实例时不报错
-    // ...
-}
-```
-
-**验证点**：
-- ✅ 所有组件访问前有空检查
-- ✅ AudioManager 在无音频时静默返回
-- ✅ ParticleEffects 在无实例时静默返回
-
-### 6. 音效/粒子降级 ✅
-
-**AudioManager**：
-- `enabled` 标志控制播放
-- 加载失败不影响游戏流程
-- 使用异步加载，不阻塞主线程
-
-**ParticleEffects**：
-- `getInstance()` 返回 null 时不报错
-- 预制体为 null 时使用 fallback 方式
-- `showSuccessParticles/showErrorParticles` 静默处理空实例
+#### 6. TypeScript 编译
+- ✅ npx tsc --noEmit 通过
 
 ---
 
-## 测试用例说明
+### ❌ 关键问题
 
-### 手动测试步骤
+#### 1. 没有 MergePanel UI 组件
+**问题描述**：
+- 没有类监听 `OPEN_MERGE_PANEL` 事件
+- HomeScene.ts:394 发送事件但无响应者
+- 用户无法通过 UI 打开合并面板
 
-1. **Cocos Creator 编辑器配置**：
-   - 创建 ItemPrefab（Sprite + ItemController + DragHandler）
-   - 创建 SlotPrefab（Sprite + SlotController）
-   - 创建 GameScene 场景并挂载 GameScene 组件
-   - 配置 prefab 和容器节点引用
-   - 添加 ProgressLabel（Label 组件）
-
-2. **测试用例**：
-   
-   | 步骤 | 操作 | 预期结果 |
-   |------|------|----------|
-   | 1 | 运行场景 | 3个物品显示在底部，3个槽位在上方 |
-   | 2 | 拖拽苹果到正确槽位 | 吸附动画+成功音效+粒子特效 |
-   | 3 | 检查进度标签 | 显示 "1/3" |
-   | 4 | 拖拽苹果到错误槽位 | 弹回+错误音效 |
-   | 5 | 拖拽过程中松手（取消） | 物品返回原位置 |
-   | 6 | 拖拽已放置物品到其他位置 | 原槽位移除，新位置放置 |
-   | 7 | 放置3个物品 | 显示 "3/3"，触发完成 |
-
----
-
-## TypeScript 编译验证
-
+**验证点**：
 ```bash
-cd /path/to/TidyMaster2/repo
-npx tsc --noEmit
-# 预期：无错误输出
+$ grep -r "OPEN_MERGE_PANEL" assets/scripts/
+assets/scripts/scenes/HomeScene.ts:394: eventManager.emit(GAME_EVENTS.OPEN_MERGE_PANEL, {});
+# 只找到发送方，没有接收方
 ```
 
-✅ **编译通过**（当前代码已验证）
+#### 2. MergeBoard 未集成到场景
+**问题描述**：
+- MergeBoard.ts 是独立组件，但没有被任何场景使用
+- 没有场景创建 MergeBoard 实例
+- 用户无法看到 3x4 合成棋盘
+
+**验证点**：
+```bash
+$ grep -r "MergeBoard" assets/scripts/scenes/
+# 无结果 - 场景中没有引用 MergeBoard
+```
+
+#### 3. 工具增益未实际应用
+**问题描述**：
+- `getToolBonus()` 返回的数据没有被实际使用
+- 时间加成、自动排序等功能没有实现到游戏逻辑中
+- 增益效果只存在于数据层面，没有实际效果
 
 ---
 
-## 边界问题处理总结
+## 边界问题处理
 
-| 问题 | 当前实现 | 状态 |
-|------|----------|------|
-| 重复放置 | SlotController.addItem 检查重复 | ✅ |
-| 槽位容量 | SLOT_CAPACITY = 7 | ✅ |
-| 取消拖拽 | onTouchCancel 处理 | ✅ |
-| 无实例降级 | AudioManager/ParticleEffects 空检查 | ✅ |
-| 重新拖拽已放置物品 | removeFromCurrentSlot + ITEM_REMOVED 事件 | ✅ |
-| 空引用 | 所有组件访问前有 null 检查 | ✅ |
-| 无效 itemId | itemController.itemId 检查 | ✅ |
-| 场景获取失败 | director.getScene() 检查 | ✅ |
+| 问题 | 实现 | 状态 |
+|------|------|------|
+| 合并时原工具移除 | removeTool() | ✅ |
+| 合并后创建新工具 | createToolAt() | ✅ |
+| 不同等级工具交换 | swapTools() | ✅ |
+| 满格子处理 | getEmptySlot() 返回 null | ✅ |
+| 拖拽取消弹回 | onTouchCancel 处理 | ✅ |
 
 ---
 
 ## 结论
 
-**M2.2 实现完整，符合验收标准**：
+**❌ 验证失败**
 
-- ✅ 正确放置/错误放置/取消拖拽三类路径稳定
-- ✅ 无重复计数问题
-- ✅ 无空引用风险
-- ✅ 音效/粒子在无实例时静默降级
-- ✅ TypeScript 编译通过
+**原因**：
+虽然合并系统的核心代码（ToolItem、MergeBoard、MergeLogic）实现完整且逻辑正确，但缺少将功能与 UI 集成的关键部分：
+
+1. **没有 MergePanel UI 组件** - 事件发送后无响应
+2. **MergeBoard 未挂载到场景** - 用户看不到棋盘
+3. **工具增益未实际应用** - 增益效果无效
+
+**代码质量**：优秀（结构清晰、逻辑完整）
+**集成情况**：缺失（无法通过手动测试）
+
+**需要修复**：将 MergeBoard 集成到场景中，添加 MergePanel 响应事件
