@@ -12,6 +12,7 @@ import { LevelDataConfig, LevelItemConfig, LevelSlotConfig } from '../data/types
 import { OperationType } from '../data/LevelData';
 import { WipeHandler } from '../gameplay/WipeHandler';
 import { FoldHandler } from '../gameplay/FoldHandler';
+import { MergeLogic } from '../merge/MergeLogic';
 
 const { ccclass, property } = _decorator;
 
@@ -58,6 +59,7 @@ export class GameScene extends Component {
     private levelManager = new LevelManager();
     private eventManager = EventManager.getInstance();
     private audioManager = AudioManager.getInstance();
+    private mergeLogic = MergeLogic.instance;
     private currentLevelId = 4;
     private currentLevelConfig: LevelDataConfig | null = null;
     private operationItemMap = new Map<string, LevelItemConfig>();
@@ -65,6 +67,8 @@ export class GameScene extends Component {
     private completedOperationItems = new Set<string>();
     private activeOperationProgress = new Map<string, number>();
     private levelCompleted = false;
+    // 装备的工具等级（用于增益效果）
+    private equippedToolLevel: number = 1;
 
     onLoad() {
         this.registerEvents();
@@ -112,6 +116,7 @@ export class GameScene extends Component {
         this.eventManager.on(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
         this.eventManager.on(GAME_EVENTS.OPERATION_PROGRESS, this.handleOperationProgress as any);
         this.eventManager.on(GAME_EVENTS.OPERATION_COMPLETE, this.handleOperationComplete as any);
+        this.eventManager.on(GAME_EVENTS.TOOL_UPGRADED, this.handleToolUpgraded as any);
     }
 
     private unregisterEvents(): void {
@@ -119,6 +124,38 @@ export class GameScene extends Component {
         this.eventManager.off(GAME_EVENTS.ITEM_REMOVED, this.handleItemRemoved as any);
         this.eventManager.off(GAME_EVENTS.OPERATION_PROGRESS, this.handleOperationProgress as any);
         this.eventManager.off(GAME_EVENTS.OPERATION_COMPLETE, this.handleOperationComplete as any);
+        this.eventManager.off(GAME_EVENTS.TOOL_UPGRADED, this.handleToolUpgraded as any);
+    }
+
+    /**
+     * 处理工具升级事件
+     */
+    private handleToolUpgraded(data: { level: number, name?: string, fromLevel?: number }): void {
+        console.log(`[GameScene] 工具升级到 ${data.level} 级`);
+        this.equippedToolLevel = data.level;
+        
+        // 应用工具增益效果
+        this.applyToolBonus();
+    }
+
+    /**
+     * 应用工具增益效果
+     */
+    private applyToolBonus(): void {
+        const bonus = this.mergeLogic.getToolBonus(this.equippedToolLevel);
+        console.log(`[GameScene] 应用工具增益:`, bonus);
+
+        // 时间加成 - 延长计时器
+        if (bonus.timeBonus > 0 && this.timerController) {
+            this.timerController.addTime(bonus.timeBonus);
+            console.log(`[GameScene] 时间加成 +${bonus.timeBonus}秒`);
+        } else if (bonus.timeBonus > 0 && this.timeLabel) {
+            // 如果没有timerController，直接更新显示（简化实现）
+            console.log(`[GameScene] 时间加成 +${bonus.timeBonus}秒 (无timerController)`);
+        }
+
+        // 可以添加更多增益效果，如自动整理、显示提示等
+        // 这里可以触发相应的事件或调用对应的功能
     }
 
     private setupOperationTargets(levelConfig: LevelDataConfig): void {

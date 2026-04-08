@@ -42,6 +42,12 @@ export class HomeScene extends Component {
     @property({ type: Node })
     public settingsPanel: Node | null = null;
 
+    @property({ type: Node })
+    public mergePanel: Node | null = null;
+
+    @property({ type: Node })
+    public mergeBtn: Node | null = null;
+
     // 数据
     private currentLevelId: number = 1;
     private playerProgress: PlayerProgress | null = null;
@@ -205,6 +211,14 @@ export class HomeScene extends Component {
                 btn.node.on('click', this.onSettingsClick, this);
             }
         }
+
+        // 合成按钮
+        if (this.mergeBtn) {
+            const btn = this.mergeBtn.getComponent(Button);
+            if (btn) {
+                btn.node.on('click', this.onMergeClick, this);
+            }
+        }
     }
 
     /**
@@ -251,6 +265,15 @@ export class HomeScene extends Component {
         console.log('[HomeScene] 点击设置');
         // 显示设置面板
         this.showSettingsPanel();
+    }
+
+    /**
+     * 合成按钮点击
+     */
+    private onMergeClick(): void {
+        console.log('[HomeScene] 点击合成');
+        // 打开合成面板
+        this.openMergePanel();
     }
 
     /**
