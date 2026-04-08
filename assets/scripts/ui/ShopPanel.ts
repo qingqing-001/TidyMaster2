@@ -157,9 +157,11 @@ export class ShopPanel extends Component {
      * 加载玩家货币
      */
     private loadPlayerCurrency(): void {
-        // 从DataManager加载
-        this._coins = 1000; // 默认金币
-        this._gems = 50;    // 默认钻石
+        // 从DataManager加载真实货币数据
+        const dataManager = DataManager.getInstance();
+        this._coins = dataManager.getCoins();
+        // TODO: 钻石数据需要从DataManager获取，当前使用默认值
+        this._gems = 50;
     }
 
     /**
