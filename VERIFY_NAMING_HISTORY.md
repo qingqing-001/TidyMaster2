@@ -49,7 +49,7 @@
 
 - `archive/history/root-signals/M2_2_VERIFICATION.md` 是历史失败快照，不是当前验收入口。
 - `archive/history/root-signals/verify_report.txt` 是历史验证报告，不是当前完成结论。
-- 根目录 `note.md` 现仅作为导航页存在，不再承载当前仓库 FAIL/PASS 结论，也不与历史结论文件并列出现。
+- 根目录 `ROOT_NAVIGATION.md` 现仅作为导航页存在，不再承载当前仓库 FAIL/PASS 结论，也不与历史结论文件并列出现。
 
 ## 适用范围
 
