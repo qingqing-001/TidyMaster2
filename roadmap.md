@@ -1,86 +1,73 @@
-# TidyMaster 项目路线图
+# TidyMaster 交付路线与状态说明
 
 ## 概述
 
-本路线图规划了《整理大师》(TidyMaster) 微信小游戏的开发里程碑。项目按照 spec.md 中定义的开发阶段组织；但所有“已完成 / 已验证 / 失败”表述，若未与当前仓库正式入口同步，均只视为历史记录。
+本文件按交付仓库口径说明项目路线与当前状态。文中若提到历史里程碑、历史完成、历史验证或历史失败，均只应理解为对应时间点的记录；除非与当前顶层文档和 `package.json` 同步，否则不构成当前现行交付结论。
 
 ---
 
-## 当前统一边界说明（以仓库现状为准）
+## 当前统一交付边界
 
-- 当前不存在覆盖全项目的正式 `main loop` / `merge loop` 验收入口；`npm run verify:chapter1-drag-loop` 当前保留为第 1 章拖拽闭环的正式命名导航入口，但 `package.json` 现阶段仅输出说明信息，不能单凭该命令名外推仓库内已有可脱离编译链路的一键执行实现。
-- `archive:verify:merge-loop` 仅为 archive/internal 占位，不得视为正式验收命令。
-- 历史根目录显眼验证资产已统一迁入 `archive/history/root-signals/`；除当前顶层文档声明的入口外，不得从这些文件名外推出正式验收结论。
-- 历史根目录显眼 setup / report / note 类文件也统一按 archive/history 语义保存在 `archive/history/root-signals/`，仅作留档，不再保留在顶层释放当前状态信号。
-- 原 `scripts/verify-*` 显眼历史脚本也已迁入 `archive/history/internal-scripts/`；当前 `scripts/` 顶层只保留说明文档，不再让这些脚本名直接暴露为对外信号。
-- 当前稳定、仓库级、可直接执行的入口包括：`npm run type-check`；`npm run verify:chapter1-drag-loop` 当前为公开命名导航入口，用于把审查者引导到正确的实现/历史说明边界。
-- 若先看到显眼的 `verify-*` 文件名、历史验证目录或旧 `verify:*` 命令名，请先回读 `VERIFY_NAMING_HISTORY.md`；这些命名默认仅表示历史/内部/局部验证资产。
-- 下文各历史里程碑若写有“已完成 / 已验证 / TypeScript 编译通过 / 失败”等，只应理解为对应时间点的历史记录；除非与当前仓库入口一致，否则不构成当前可独立复核的现行完成态。
+- 当前不存在覆盖全项目的正式 `main loop` / `merge loop` 验收入口。
+- `npm run verify:chapter1-drag-loop` 当前保留为第 1 章拖拽闭环的正式命名导航入口，但当前只输出统一说明信息，不应据此外推出仓库已提供独立一键闭环验证实现。
+- `archive:verify:merge-loop` 仅为 archive/internal 历史占位脚本，不属于正式交付入口。
+- `archive/history/root-signals/` 与 `archive/history/internal-scripts/` 中的材料统一按历史归档理解，不构成当前交付结论。
+- 当前稳定、仓库级、可直接执行的正式入口包括：`npm run type-check`。
+- 当前更准确的交付状态是：**已交付项目源码、资源、配置与边界说明文档；尚未交付覆盖全项目的正式主循环/合成循环验收链路。**
 
 ---
 
-## Phase 1：核心原型 - MVP验证
+## 已交付的主要内容类型
 
-### M1.1: 项目基础框架搭建（配置与结构）
-**状态**：历史记录（仅限当时上下文）
+### 1. 项目基础结构
 
-- 初始化 Cocos Creator 项目基础结构
-- 建立 TypeScript 配置与目录布局
-- 接入基础管理器与微信小游戏配置
+- Cocos Creator 项目配置
+- TypeScript 配置
+- 源码目录与资源目录
+- 微信小游戏构建侧配置
 
-### M1.2: 配置数据和构建验证
-**状态**：仅保留代码入库事实
+### 2. 代码与资源资产
 
-- 相关配置文件与适配器代码曾作为当期成果入库
-- 历史“TypeScript 编译通过”等表述不再直接等于当前现行结论
+仓库内已入库的内容包括但不限于：
 
-### M2：拖拽核心玩法实现（父里程碑）
-**状态**：已拆分
+- 场景资源
+- 拖拽相关实现
+- 折叠、合成、UI、音频等模块代码
+- 若干历史验证脚本与说明材料（仅作追溯用途）
 
-### M2.1：首个可玩拖拽关卡闭环
-**状态**：已建立正式脚本化验证入口（第 1 章单关）
+### 3. 当前可引用的正式入口
 
-- 现行公开命名入口：`npm run verify:chapter1-drag-loop`（当前用于导航与边界说明；若需真实执行，应结合项目编译链路与后续落地实现）
-- 静态类型检查入口：`npm run type-check`
-
-### M2.2：拖拽反馈与稳定性打磨
-**状态**：仅保留历史代码/文档记录
-
-### M3：关卡系统实现
-**状态**：仅保留代码入库事实
-
-### M4.1：第4-6章关卡接入与静态校验
-**状态**：仅保留历史记录，不作为当前现行结论
-
-- 历史记录中出现过 `verify:chapter4`、`verify:chapter5`、`verify:chapter6`、`verify:level-counts`、`verify:runtime-access`、`verify:level-progression` 等局部验证脚本命名。
-- 这些历史命名及其相关说明现已统一按 archive/history 资产理解，不构成当前正式入口。
-
-### M4.2：场景切换和 UI 组件
-**状态**：仅保留代码入库事实
-
-### M5：首个完整关卡测试
-**状态**：仅保留历史代码/文档记录
-
-- 如需查看旧失败/旧验证快照，应到 `archive/history/root-signals/` 中查阅历史归档，而不是把历史快照当作当前状态。
+- `npm run type-check`
+- `npm run verify:chapter1-drag-loop`（正式命名导航入口）
 
 ---
 
-## Phase 2：系统完善
+## 历史里程碑如何理解
 
-### 多操作类型、合成、广告、社交等后续里程碑
+### Phase 1：核心原型
 
-- 下列内容在仓库内保留不同程度的代码、说明或历史验证材料：擦洗、折叠、合成系统、广告、社交、关卡扩展。
-- 除非未来在 `README.md`、`MAIN_LOOP_VERIFICATION.md`、`package.json`、`scripts/README_VERIFY_HISTORY.md`、`VERIFY_NAMING_HISTORY.md` 中同步升格，否则这些能力仍只视为“已有代码/历史材料”，不视为“已有正式仓库级验收入口”。
+- 历史上已经形成项目基础结构、若干玩法模块与首章相关验证命名。
+- 当前交付仓库只保留这些代码与材料的入库事实，不把历史“已完成 / 已验证 / 失败”直接当作现行交付结论。
+
+### Phase 2：系统扩展
+
+- 仓库中保留了多操作类型、合成、广告、社交等不同程度的代码与历史材料。
+- 在顶层入口未同步升格前，这些内容只能说明“已有实现或历史验证素材”，不能说明“已经形成正式仓库级验收入口”。
 
 ---
 
-## 审查者导航
+## 审查者阅读建议
 
-外部只读审查者当前应优先查看：
+外部只读审查者建议按以下顺序判断当前交付状态：
 
 1. `README.md`
 2. `MAIN_LOOP_VERIFICATION.md`
 3. `VERIFY_NAMING_HISTORY.md`
-4. `scripts/README_VERIFY_HISTORY.md`
-5. `scripts/internal/README.md`
-6. `archive/history/root-signals/` 与 `archive/history/internal-scripts/`（仅在需要查看历史资产时）
+4. `package.json`
+5. `scripts/README_VERIFY_HISTORY.md`
+6. `ROOT_NAVIGATION.md`
+
+如需追溯历史材料，再查看：
+
+- `archive/history/root-signals/`
+- `archive/history/internal-scripts/`
