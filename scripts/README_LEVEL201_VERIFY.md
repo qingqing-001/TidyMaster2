@@ -1,37 +1,33 @@
 # 第2章 201 关真实擦洗脚本验证
 
-## 目标
-验证以下内容都直接基于项目内真实关卡配置，而不是纯 mock：
+## 定位
 
-1. `getLevelConfig(201)` 能拿到第 2 章真实关卡。
-2. 201 关包含真实擦洗物品与擦洗目标槽位。
-3. 擦洗进度按项目 `WipeHandler` 相同公式可以推进。
-4. 达到阈值后完成判定成立。
-5. 输出明确的 `PASS/FAIL`。
+这是一个**局部功能验证脚本说明**，用于核对第 2 章 201 关的真实擦洗配置与基础推进逻辑。
 
-## 运行命令
-```bash
-npm run verify:level201
-```
+它的用途仅限于：
 
-也可以直接执行：
-```bash
-npx tsc scripts/verify-chapter2-level201.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-level201
-node .tmp/verify-level201/scripts/verify-chapter2-level201.js
-```
+- 校验 `getLevelConfig(201)` 是否仍能命中真实关卡配置
+- 校验擦洗物品、目标槽位与推进公式是否可被脚本读取
+- 为开发期局部回归提供辅助证据
 
-## 预期输出
-输出会包含以下检查项：
+它**不是**：
 
-- `真实关卡入口：getLevelConfig(201)`
-- `关卡 201 包含真实擦洗物品`
-- `擦洗进度可推进`
-- `擦洗完成判定可成立`
-- 最终 `PASS/FAIL`
+- 仓库级正式验收入口
+- 项目整体完成证明
+- 主循环 / merge loop / milestone 的正式仓库级统一验收结论
 
-## 说明
-- 当前脚本直接读取 `assets/scripts/data/levels.ts` 导出的真实关卡入口。
-- 擦洗推进和完成判定使用与 `assets/scripts/gameplay/WipeHandler.ts` 一致的核心公式：
-  - `progress = (totalDistance / requiredDistance) * 100 * wipeSpeed`
-  - 当 `progress >= wipeThreshold` 时判定完成并收敛到 `100%`
-- 如果 `getLevelConfig(201)` 失效，脚本会直接失败并返回非 0 退出码。
+如需理解当前仓库关于“正式验收入口”与“历史/内部脚本”的统一口径，请同时阅读：
+
+- `README.md`
+- `MAIN_LOOP_VERIFICATION.md`
+- `scripts/README_VERIFY_HISTORY.md`
+- `VERIFY_NAMING_HISTORY.md`
+- `package.json`
+
+## 当前边界
+
+- `npm run verify:level201` 若未来恢复，也只覆盖 **201 关擦洗链路** 的局部检查。
+- 该命令名称里的 `verify` 仅表示局部验证动作，不表示仓库级正式验收入口，也不会自然升格为任何 `verify:main-loop` 替代品。
+- 当前顶层 `package.json` 并未公开提供 `verify:level201` 正式脚本入口；如未来恢复，也必须与 `README.md`、`roadmap.md`、`MAIN_LOOP_VERIFICATION.md`、`VERIFY_NAMING_HISTORY.md`、`scripts/README_VERIFY_HISTORY.md` 同步更新后，才能改变口径。
+- 历史 `.tmp/verify-level201` 风格产物应一律理解为**历史/内部/archive 命名体系下的临时产物**；当前同类资产统一查看 `archive/history/scripts-tmp/`。
+- 即使脚本输出 `PASS`，也只表示该局部验证项通过，**不应被误读为正式验收通过**。

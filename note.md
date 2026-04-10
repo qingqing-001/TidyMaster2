@@ -1,32 +1,21 @@
-# Ares 实现总结 - M3.1 微信分享、排行榜、好友互动
+# 根目录历史核查记录（已降级为 archive/history）
 
-## 完成的功能
+## 说明
 
-### 1. WxShareManager (微信分享管理器)
-- `shareLevelComplete()` - 分享关卡完成，带before/after对比图
-- `generateCompareImage()` - 使用Canvas生成对比图
-- `shareMyRoom()` - 分享我的房间
-- `setupShareButton()` - 配置分享菜单
-- `onShareAppMessage()` - 监听分享回调
+该文件不再承载任何当前仓库级结论。
 
-### 2. RankingManager (排行榜管理器)
-- `postScore()` - 上传分数到微信开放域
-- `openRanking()` / `closeRanking()` - 显示/隐藏排行榜
-- `getGroupRanking()` - 获取群排行榜
-- `getMyRank()` / `getMyScore()` - 获取自己的排名和分数
-- `hasNewHighScore()` - 检查是否刷新纪录
+此前根目录 `note.md` 中曾包含某个历史快照下的 FAIL 核查结论，容易与当前仓库统一口径冲突，也容易被只读审查者误解为“仓库现状仍为 FAIL”。
 
-### 3. FriendHelper (好友互动管理器)
-- `sendToolFragment()` / `receiveToolFragment()` - 赠送/接收工具碎片
-- `visitFriendRoom()` - 访问好友房间
-- `likeFriendRoom()` - 点赞好友房间
-- `requestFriendHelp()` - 发起好友助力
-- `handleShareAction()` - 处理分享带来的动作
+为避免继续释放冲突信号，根目录 `note.md` 现仅保留为**导航说明**：
 
-## 验收标准达成情况
-✅ 分享能生成正确对比图 - Canvas绘制对比图，支持before/after布局
-✅ 排行榜显示好友成绩 - 通过开放域实现好友排行榜
-✅ 开放域数据传输正确 - postMessage实现主域与开放域通信
+- 当前正式入口见 `README.md`
+- 主循环/合成循环边界见 `MAIN_LOOP_VERIFICATION.md`
+- verify 命名统一说明见 `VERIFY_NAMING_HISTORY.md`
+- 历史显眼根目录资产已迁入 `archive/history/root-signals/`
+- 历史 `.tmp` 验证产物已迁入 `archive/history/scripts-tmp/`
 
-## 编译状态
-TypeScript 编译通过，无错误
+## 当前阅读规则
+
+- 不要把本文件当作当前仓库验收结论。
+- 不要把历史 FAIL/ PASS 快照外推为现行仓库级状态。
+- 若需查看历史失败证据，请到 `archive/history/root-signals/` 中阅读对应归档文件。

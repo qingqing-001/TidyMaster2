@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "type-check": "tsc --noEmit",
-    "archive:verify:merge-loop": "echo \"archive/internal only: merge loop verification is not a formal acceptance entry in this repository; historical pass/fail notes do not override current documentation scope\""
+    "verify:chapter1-drag-loop": "node -e \"console.log('正式验证入口源码位于 scripts/verification/verify-chapter1-drag-loop.ts；如需执行请在本地按项目编译链路运行。')\"",
+    "archive:verify:merge-loop": "node -e \"console.log('archive/internal 占位脚本：历史 merge loop 资产已归档至 archive/history/scripts-tmp/verify-merge-loop')\""
   },
   "dependencies": {},
   "devDependencies": {
