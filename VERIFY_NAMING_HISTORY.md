@@ -16,10 +16,9 @@
 以下命名即使看起来像“验证入口”，也都应默认按**历史 / 内部 / archive / 局部验证资产**理解：
 
 - `archive/history/root-signals/` 下保留的旧根目录 `verify-*` 文件
-- `scripts/verify-*` 脚本（默认仅作局部验证/历史辅助，不等于 `package.json` 中存在同名正式可执行入口）
+- `archive/history/internal-scripts/` 下保留的原 `scripts/verify-*` 脚本（默认仅作局部验证/历史辅助，不等于 `package.json` 中存在同名正式可执行入口）
 - `scripts/README_*VERIFY*.md` 类说明文件
 - `archive/history/root-signals/` 下的历史 `report` / `note` / `SETUP` 文件
-- `archive/history/scripts-tmp/verify-*` 与 `archive/history/scripts-tmp/manual-verify-*` 目录
 - 文档中的 `verify:*` 历史命令名
 
 这些内容只说明：
@@ -50,7 +49,7 @@
 
 - `archive/history/root-signals/M2_2_VERIFICATION.md` 是历史失败快照，不是当前验收入口。
 - `archive/history/root-signals/verify_report.txt` 是历史验证报告，不是当前完成结论。
-- 根目录 `note.md` 已降级为导航说明，不再承载当前仓库 FAIL/PASS 结论。
+- 根目录 `note.md` 现仅作为导航页存在，不再承载当前仓库 FAIL/PASS 结论，也不与历史结论文件并列出现。
 
 ## 适用范围
 

@@ -5,8 +5,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "type-check": "tsc --noEmit",
-    "verify:chapter1-drag-loop": "node -e \"console.log('正式验证入口源码位于 scripts/verification/verify-chapter1-drag-loop.ts；如需执行请在本地按项目编译链路运行。')\"",
-    "archive:verify:merge-loop": "node -e \"console.log('archive/internal 占位脚本：历史 merge loop 资产已归档至 archive/history/scripts-tmp/verify-merge-loop')\""
+    "verify:chapter1-drag-loop": "node -e \"console.log('verify:chapter1-drag-loop 当前为正式命名导航入口；仓库公开口径请查看 README.md、MAIN_LOOP_VERIFICATION.md、VERIFY_NAMING_HISTORY.md 与 scripts/README_VERIFY_HISTORY.md。')\"",
+    "archive:verify:merge-loop": "node -e \"console.log('archive/internal 占位脚本：历史 merge loop 相关资产当前仅归档于 archive/history/internal-scripts/ 与 archive/history/root-signals/。')\""
   },
   "dependencies": {},
   "devDependencies": {

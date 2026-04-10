@@ -8,10 +8,10 @@
 
 - 当前仓库没有对外承诺的正式 `main loop` / `merge loop` 验收命令。
 - 当前仓库稳定、仓库级、可直接执行的入口包括：基础静态校验 `npm run type-check`。
-- `npm run verify:chapter1-drag-loop` 当前保留为第 1 章单关拖拽闭环的正式命名导航入口：它在 `package.json` 中只输出说明信息，用于把读者导向正确的实现边界、历史说明和后续编译链路，而不是在现仓库状态下直接执行完整闭环验证。
+- `npm run verify:chapter1-drag-loop` 当前保留为第 1 章单关拖拽闭环的正式命名导航入口：它在 `package.json` 中只输出统一说明信息，用于把读者导向正确的实现边界、历史说明和后续编译链路，而不是在现仓库状态下直接执行完整闭环验证。
 - `archive:verify:merge-loop` 仅作为 **archive/internal** 历史脚本占位保留在 `package.json`。
 - 该占位脚本不会执行真实合成闭环验证；它只用于提醒：相关能力尚未被升格为正式验收入口。
-- 该脚本对应的历史真实验证实现，若在历史目录中存在，也只能用于：
+- 该占位脚本对应的历史真实验证素材当前仅按 archive/history 资产理解，只能用于：
   - 历史留档
   - 内部排查
   - 局部回归
@@ -20,8 +20,7 @@
 
 ## 与当前实现边界对应的最新状态
 
-- `archive/history/scripts-tmp/verify-main-loop`、`archive/history/scripts-tmp/verify-merge-loop` 等目录仅为历史验证产物归档，保留目的是避免丢失历史排查结果；它们不是现行实现，也不是正式验收入口。
-- `archive/history/root-signals/` 与 `archive/history/scripts-tmp/` 下即使仍保留显眼 `verify-*` 名称，也统一只按历史/内部/archive 资产理解，不构成正式入口线索。
+- `archive/history/root-signals/` 与 `archive/history/internal-scripts/` 下即使仍保留显眼 `verify-*` 名称，也统一只按历史/内部/archive 资产理解，不构成正式入口线索。
 - 同目录中的历史 `report` / `note` / `SETUP` 类文件也只表示当时的排查或接线快照，不代表当前顶层结论。
 - 若读者先被这些命名吸引，应回读 `VERIFY_NAMING_HISTORY.md` 的统一总说明，而不是据此推断存在正式入口。
 - 仓库内已存在 `merge/`、`ui/MergePanel.ts` 等合成相关实现骨架与局部逻辑。
@@ -35,7 +34,7 @@
 
 - 仓库中若存在较早时间形成的“验证失败”类文档，其失败结论仅代表当时快照，不自动代表当前仓库状态。
 - 本轮收口后的统一结论不是“主循环正式验收已通过”，也不是“主循环当前正式验收失败”，而是：**当前不存在正式主循环验收入口；相关 archive/internal 素材不得外宣为正式验收结果。**
-- 历史失败快照与历史自检脚本已迁入 `archive/history/root-signals/`，历史临时编译与验证输出已迁入 `archive/history/scripts-tmp/`。
+- 历史失败快照与历史根目录显眼资产已迁入 `archive/history/root-signals/`，历史自检脚本已迁入 `archive/history/internal-scripts/`。
 
 ## 对文档口径的要求
 
