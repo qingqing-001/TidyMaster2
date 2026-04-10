@@ -8,12 +8,12 @@
 
 ## 当前统一边界说明（以仓库现状为准）
 
-- 当前不存在覆盖全项目的正式 `main loop` / `merge loop` 验收入口，但已存在第 1 章单关拖拽闭环正式验证命令：`npm run verify:chapter1-drag-loop`。
+- 当前不存在覆盖全项目的正式 `main loop` / `merge loop` 验收入口；`npm run verify:chapter1-drag-loop` 当前保留为第 1 章拖拽闭环的正式命名导航入口，但 `package.json` 现阶段仅输出说明信息，不能单凭该命令名外推仓库内已有可脱离编译链路的一键执行实现。
 - `archive:verify:merge-loop` 仅为 archive/internal 占位，不得视为正式验收命令。
 - 历史 `.tmp/verify-*` 与 `.tmp/manual-verify-*` 产物已统一迁入 `archive/history/scripts-tmp/`；这些目录仅为历史验证产物，不代表当前仓库已有正式实现。
 - 历史根目录显眼验证资产已统一迁入 `archive/history/root-signals/`；除当前顶层文档声明的入口外，不得从这些文件名外推出正式验收结论。
 - 历史根目录显眼 setup / report / note 类文件也统一按 archive/history 语义保存在 `archive/history/root-signals/`，仅作留档，不再保留在顶层释放当前状态信号。
-- 当前稳定、仓库级、可直接执行的入口包括：`npm run type-check` 与 `npm run verify:chapter1-drag-loop`。
+- 当前稳定、仓库级、可直接执行的入口包括：`npm run type-check`；`npm run verify:chapter1-drag-loop` 当前为公开命名导航入口，用于把审查者引导到正确的实现/历史说明边界。
 - 若先看到显眼的 `verify-*` 文件名、历史验证目录或旧 `verify:*` 命令名，请先回读 `VERIFY_NAMING_HISTORY.md`；这些命名默认仅表示历史/内部/局部验证资产。
 - 下文各历史里程碑若写有“已完成 / 已验证 / TypeScript 编译通过 / 失败”等，只应理解为对应时间点的历史记录；除非与当前仓库入口一致，否则不构成当前可独立复核的现行完成态。
 
@@ -40,7 +40,7 @@
 ### M2.1：首个可玩拖拽关卡闭环
 **状态**：已建立正式脚本化验证入口（第 1 章单关）
 
-- 现行可复核入口：`npm run verify:chapter1-drag-loop`
+- 现行公开命名入口：`npm run verify:chapter1-drag-loop`（当前用于导航与边界说明；若需真实执行，应结合项目编译链路与后续落地实现）
 - 静态类型检查入口：`npm run type-check`
 
 ### M2.2：拖拽反馈与稳定性打磨

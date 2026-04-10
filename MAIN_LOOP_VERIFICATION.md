@@ -7,7 +7,8 @@
 ## 当前结论
 
 - 当前仓库没有对外承诺的正式 `main loop` / `merge loop` 验收命令。
-- 当前仓库稳定、仓库级、可直接执行的入口包括：基础静态校验 `npm run type-check`，以及当前正式、可复核的第 1 章单关拖拽闭环验证 `npm run verify:chapter1-drag-loop`。
+- 当前仓库稳定、仓库级、可直接执行的入口包括：基础静态校验 `npm run type-check`。
+- `npm run verify:chapter1-drag-loop` 当前保留为第 1 章单关拖拽闭环的正式命名导航入口：它在 `package.json` 中只输出说明信息，用于把读者导向正确的实现边界、历史说明和后续编译链路，而不是在现仓库状态下直接执行完整闭环验证。
 - `archive:verify:merge-loop` 仅作为 **archive/internal** 历史脚本占位保留在 `package.json`。
 - 该占位脚本不会执行真实合成闭环验证；它只用于提醒：相关能力尚未被升格为正式验收入口。
 - 该脚本对应的历史真实验证实现，若在历史目录中存在，也只能用于：

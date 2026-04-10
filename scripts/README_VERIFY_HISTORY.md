@@ -11,7 +11,8 @@
 当前仓库：
 
 - **不存在**正式 `main loop` / `merge loop` 验收入口。
-- 当前稳定、仓库级、可直接执行的入口包括：基础静态校验 `npm run type-check`，以及当前正式、可复核的第 1 章单关拖拽闭环验证 `npm run verify:chapter1-drag-loop`。
+- 当前稳定、仓库级、可直接执行的入口包括：基础静态校验 `npm run type-check`。
+- `npm run verify:chapter1-drag-loop` 当前为正式命名导航入口：`package.json` 只输出导航提示，提醒读者该命名对应的是第 1 章拖拽闭环验证语义，而非现仓库状态下可脱离编译链路直接执行的完整脚本。
 - `scripts/` 下的 `verify-*` 脚本默认都属于**局部验证 / 开发期回归 / 辅助排查 / 历史留档**；仅因源码文件存在，并不表示 `package.json` 中已有对应正式可执行入口，除非未来有跨文档同步明确升格。
 
 ## 2. scripts/verify-* 的默认分类
@@ -52,7 +53,8 @@
 
 ## 4. 当前 scripts 目录的正式入口与辅助入口
 
-- 正式入口脚本：`scripts/verification/verify-chapter1-drag-loop.ts`
+- 正式命名导航入口：`npm run verify:chapter1-drag-loop`
+- 当前已稳定可直接执行的正式入口：`npm run type-check`
 - 历史/局部辅助脚本：其余 `scripts/verify-*`
 - 历史说明文件：`scripts/README_LEVEL201_VERIFY.md`、本文档
 
