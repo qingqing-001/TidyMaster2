@@ -5,6 +5,7 @@
   "scripts": {
     "build": "npm run type-check",
     "type-check": "tsc --noEmit",
+    "verify:lifecycle": "npx tsc -p scripts/tsconfig.verify-lifecycle.json && node .tmp/verify-lifecycle/scripts/verify-lifecycle.js",
     "verify:main-loop": "npx tsc -p scripts/tsconfig.verify-main-loop.json && node .tmp/verify-main-loop/scripts/verify-main-loop.js",
     "archive:verify:chapter4": "npx tsc scripts/verify-chapter4-levels.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-chapter4 && node .tmp/verify-chapter4/scripts/verify-chapter4-levels.js",
     "archive:verify:chapter5": "npx tsc scripts/verify-chapter5-levels.ts --module commonjs --target ES2020 --lib ES2020,DOM --esModuleInterop --moduleResolution node --skipLibCheck --outDir .tmp/verify-chapter5 && node .tmp/verify-chapter5/scripts/verify-chapter5-levels.js",

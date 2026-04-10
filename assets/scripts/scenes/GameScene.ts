@@ -60,7 +60,7 @@ export class GameScene extends Component {
     @property({ type: Label, tooltip: '时间显示标签' })
     private timeLabel: Label | null = null;
 
-    private levelManager = new LevelManager();
+    private levelManager = LevelManager.getInstance();
     private eventManager = EventManager.getInstance();
     private audioManager = AudioManager.getInstance();
     private mergeLogic = MergeLogic.instance;

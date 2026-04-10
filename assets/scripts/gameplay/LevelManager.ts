@@ -31,6 +31,16 @@ export interface LevelDefinition {
 }
 
 export class LevelManager {
+  private static instance: LevelManager | null = null;
+
+  public static getInstance(): LevelManager {
+    if (LevelManager.instance === null) {
+      LevelManager.instance = new LevelManager();
+    }
+
+    return LevelManager.instance;
+  }
+
   private currentLevel: LevelDefinition | null = null;
   private progressByItem: Map<string, boolean> = new Map();
   private levelConfigById: Map<number, LevelDataConfig> = new Map();
@@ -40,6 +50,7 @@ export class LevelManager {
   public loadLevel(level: LevelDefinition, sourceConfig?: LevelDataConfig): void {
     this.currentLevel = level;
     this.progressByItem.clear();
+    this.levelConfigById.clear();
     this.itemConfigById.clear();
     this.slotConfigById.clear();
 

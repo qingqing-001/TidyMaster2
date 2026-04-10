@@ -1,9 +1,9 @@
-import { _decorator, Component, director, SceneAsset, Node, Graphics, Color, tween, UIOpacity, Canvas, view } from 'cc';
+import { _decorator, Component, director, SceneAsset, Node, Graphics, Color, tween, UIOpacity, view } from 'cc';
 import { AudioManager } from '../audio/AudioManager';
 import { DataManager } from './DataManager';
 import { EventManager } from './EventManager';
 import { LevelManager } from '../gameplay/LevelManager';
-import { GAME_CONFIG, GAME_EVENTS } from '../../data/constants';
+import { GAME_EVENTS } from '../../data/constants';
 import type { ChangeScenePayload } from './eventPayloads';
 import PlatformManager from '../platform/PlatformManager';
 import { PlatformAdapter } from '../platform/PlatformAdapter';
@@ -12,12 +12,24 @@ const { ccclass, property } = _decorator;
 
 @ccclass('GameManager')
 export class GameManager extends Component {
-  private static instance: GameManager | null = null;
+  private static runtimeInstance: GameManager | null = null;
+
+  public static getInstance(): GameManager {
+    if (GameManager.runtimeInstance === null) {
+      throw new Error('[GameManager] 运行时实例未初始化，请将 GameManager 挂载到场景节点后再调用 getInstance()');
+    }
+
+    return GameManager.runtimeInstance;
+  }
+
+  public static createForTesting(): GameManager {
+    return new GameManager();
+  }
 
   private readonly eventManager = EventManager.getInstance();
   private readonly dataManager = DataManager.getInstance();
   private readonly audioManager = AudioManager.getInstance();
-  private readonly levelManager = new LevelManager();
+  private readonly levelManager = LevelManager.getInstance();
   private readonly platformAdapter: PlatformAdapter = PlatformManager.getAdapter();
 
   // 场景过渡相关
@@ -41,16 +53,19 @@ export class GameManager extends Component {
   @property({ type: SceneAsset })
   public myRoomScene: SceneAsset | null = null;
 
-  public static getInstance(): GameManager {
-    if (GameManager.instance === null) {
-      GameManager.instance = new GameManager();
+  public onLoad(): void {
+    if (GameManager.runtimeInstance && GameManager.runtimeInstance !== this) {
+      console.warn('[GameManager] 检测到重复实例，后续将复用最新挂载实例');
     }
-
-    return GameManager.instance;
+    GameManager.runtimeInstance = this;
+    this.setupEventListeners();
   }
 
-  public onLoad(): void {
-    this.setupEventListeners();
+  public onDestroy(): void {
+    this.eventManager.off(GAME_EVENTS.CHANGE_SCENE, this.onChangeScene, this);
+    if (GameManager.runtimeInstance === this) {
+      GameManager.runtimeInstance = null;
+    }
   }
 
   private setupEventListeners(): void {
@@ -60,10 +75,12 @@ export class GameManager extends Component {
 
   public initialize(): void {
     const progress = this.dataManager.getProgress();
+    const match = progress.currentLevelId.match(/(\d+)/);
+    const resolvedLevelId = match ? Number(match[1]) : 1;
     this.audioManager.setEnabled(progress.soundEnabled);
     this.levelManager.loadLevel({
       id: progress.currentLevelId || '1',
-      levelId: Number(progress.currentLevelId || 1),
+      levelId: Number.isFinite(resolvedLevelId) ? resolvedLevelId : 1,
       chapter: 1,
       name: 'Default Level',
       sceneName: 'default',
@@ -222,50 +239,8 @@ export class GameManager extends Component {
           .start();
       } else {
         this.isTransitioning = false;
+        this.eventManager.emit('scene-loaded', sceneName);
       }
     });
-  }
-
-  /**
-   * 切换到启动场景
-   */
-  public goToLaunchScene(): void {
-    this.loadScene('Launch');
-  }
-
-  /**
-   * 切换到主界面
-   */
-  public goToHomeScene(): void {
-    this.loadScene('Home');
-  }
-
-  /**
-   * 切换到游戏场景
-   */
-  public goToGameScene(): void {
-    this.loadScene('Game');
-  }
-
-  /**
-   * 切换到结算场景
-   */
-  public goToResultScene(): void {
-    this.loadScene('Result');
-  }
-
-  /**
-   * 切换到我的房间场景
-   */
-  public goToMyRoomScene(): void {
-    this.loadScene('MyRoom');
-  }
-
-  public getLevelManager(): LevelManager {
-    return this.levelManager;
-  }
-
-  public onDestroy(): void {
-    this.eventManager.off(GAME_EVENTS.CHANGE_SCENE, this.onChangeScene, this);
   }
 }
