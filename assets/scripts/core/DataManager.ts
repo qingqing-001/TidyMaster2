@@ -7,11 +7,17 @@ export interface PlayerProgress {
   soundEnabled: boolean;
 }
 
+export interface RewardInventory {
+  toolFragments: number;
+  titles: string[];
+}
+
 // Storage key constants
 const STORAGE_KEYS = {
   PLAYER_PROGRESS: 'tidy_master_progress',
   COINS: 'tidy_master_coins',
   CHECKIN_DATA: 'tidy_master_checkin',
+  REWARD_INVENTORY: 'tidy_master_reward_inventory',
 };
 
 export class DataManager {
@@ -21,6 +27,10 @@ export class DataManager {
     soundEnabled: true,
   };
   private _coins: number = 0;
+  private _rewardInventory: RewardInventory = {
+    toolFragments: 0,
+    titles: [],
+  };
 
   public static getInstance(): DataManager {
     if (DataManager.instance === null) {
@@ -33,6 +43,7 @@ export class DataManager {
   constructor() {
     this.loadProgress();
     this.loadCoins();
+    this.loadRewardInventory();
   }
 
   public getProgress(): PlayerProgress {
@@ -123,6 +134,28 @@ export class DataManager {
     });
   }
 
+  // ==================== 奖励库存 ====================
+
+  public addToolFragments(amount: number): void {
+    if (amount <= 0) return;
+    this._rewardInventory.toolFragments += amount;
+    this.saveRewardInventory();
+  }
+
+  public getToolFragments(): number {
+    return this._rewardInventory.toolFragments;
+  }
+
+  public addTitle(title: string): void {
+    if (!title || this._rewardInventory.titles.includes(title)) return;
+    this._rewardInventory.titles.push(title);
+    this.saveRewardInventory();
+  }
+
+  public getTitles(): string[] {
+    return [...this._rewardInventory.titles];
+  }
+
   // ==================== 本地存储 ====================
 
   /**
@@ -181,6 +214,33 @@ export class DataManager {
     }
   }
 
+  private saveRewardInventory(): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.REWARD_INVENTORY, JSON.stringify(this._rewardInventory));
+    } catch (e) {
+      console.error('[DataManager] 保存奖励库存失败:', e);
+    }
+  }
+
+  private loadRewardInventory(): void {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.REWARD_INVENTORY);
+      if (data) {
+        const parsed = JSON.parse(data) as Partial<RewardInventory>;
+        this._rewardInventory = {
+          toolFragments: typeof parsed.toolFragments === 'number' ? parsed.toolFragments : 0,
+          titles: Array.isArray(parsed.titles) ? parsed.titles.filter((title): title is string => typeof title === 'string') : [],
+        };
+      }
+    } catch (e) {
+      console.error('[DataManager] 加载奖励库存失败:', e);
+      this._rewardInventory = {
+        toolFragments: 0,
+        titles: [],
+      };
+    }
+  }
+
   // ==================== 签到数据管理 ====================
 
   /**
@@ -219,6 +279,7 @@ export class DataManager {
       localStorage.removeItem(STORAGE_KEYS.PLAYER_PROGRESS);
       localStorage.removeItem(STORAGE_KEYS.COINS);
       localStorage.removeItem(STORAGE_KEYS.CHECKIN_DATA);
+      localStorage.removeItem(STORAGE_KEYS.REWARD_INVENTORY);
       
       // 重置为默认值
       this.progress = {
@@ -226,6 +287,10 @@ export class DataManager {
         soundEnabled: true,
       };
       this._coins = 100;
+      this._rewardInventory = {
+        toolFragments: 0,
+        titles: [],
+      };
       
       console.log('[DataManager] 所有数据已清空');
     } catch (e) {

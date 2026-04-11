@@ -1,8 +1,9 @@
-import { _decorator, Component } from 'cc';
+import { _decorator } from 'cc';
 import { DataManager } from '../core/DataManager';
 import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../../data/constants';
 import { AchievementData, AchievementType, AchievementReward } from '../data/AchievementData';
+import { RoomDecorationManager } from './RoomDecorationManager';
 
 const { ccclass } = _decorator;
 
@@ -11,8 +12,8 @@ const { ccclass } = _decorator;
  * 管理成就系统的达成和奖励
  */
 @ccclass('AchievementManager')
-export class AchievementManager extends Component {
-    private static _instance: AchievementManager;
+export class AchievementManager {
+    private static _instance: AchievementManager | null = null;
 
     static get instance(): AchievementManager {
         if (!this._instance) {
@@ -25,6 +26,9 @@ export class AchievementManager extends Component {
     private static readonly STORAGE_KEY = 'tidy_master_achievements';
     private static readonly PROGRESS_KEY = 'tidy_master_achievement_progress';
 
+    private static readonly TOOL_FRAGMENT_REWARD_KEY = 'tidy_master_achievement_tool_fragments';
+    private static readonly TITLE_REWARD_KEY = 'tidy_master_achievement_titles';
+
     // 已解锁的成就ID集合
     private _unlockedAchievements: Set<string> = new Set();
 
@@ -35,14 +39,10 @@ export class AchievementManager extends Component {
     private _achievementConfigs: Map<string, AchievementData> = new Map();
 
     private constructor() {
-        super();
         this.initAchievements();
         this.loadData();
     }
 
-    onLoad() {
-        this.loadData();
-    }
 
     // ==================== 初始化 ====================
 
@@ -330,20 +330,28 @@ export class AchievementManager extends Component {
             dataManager.addCoins(reward.coins);
         }
 
-        // TODO: 发放工具碎片
         if (reward.toolFragments) {
-            console.log(`[AchievementManager] 获得工具碎片: ${reward.toolFragments}`);
+            dataManager.addToolFragments(reward.toolFragments);
+            localStorage.setItem(AchievementManager.TOOL_FRAGMENT_REWARD_KEY, dataManager.getToolFragments().toString());
         }
 
-        // TODO: 发放装饰物
         if (reward.decoration) {
-            console.log(`[AchievementManager] 获得装饰物: ${reward.decoration}`);
+            const roomManager = this.getRoomDecorationManager();
+            if (roomManager) {
+                roomManager.unlockDecoration(reward.decoration);
+            } else {
+                console.warn(`[AchievementManager] 装饰物奖励暂存，等待 RoomDecorationManager 就绪: ${reward.decoration}`);
+            }
         }
 
-        // TODO: 解锁称号
         if (reward.title) {
-            console.log(`[AchievementManager] 解锁称号: ${reward.title}`);
+            dataManager.addTitle(reward.title);
+            localStorage.setItem(AchievementManager.TITLE_REWARD_KEY, JSON.stringify(dataManager.getTitles()));
         }
+    }
+
+    private getRoomDecorationManager(): RoomDecorationManager | null {
+        return RoomDecorationManager.instance;
     }
 
     /**

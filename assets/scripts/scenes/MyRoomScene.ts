@@ -1,5 +1,6 @@
-import { _decorator, Component, Node, Label, Button, Sprite, UITransform, Vec3, instantiate } from 'cc';
+import { _decorator, Component, Node, Label, Sprite, director } from 'cc';
 import { EventManager } from '../core/EventManager';
+import { DataManager } from '../core/DataManager';
 import { GAME_EVENTS } from '../../data/constants';
 import { RoomDecorationManager, DecorationCategory, PlacedDecoration } from '../collection/RoomDecorationManager';
 
@@ -34,7 +35,10 @@ export class MyRoomScene extends Component {
 
     onLoad() {
         // 初始化管理器
-        this._roomManager = RoomDecorationManager.instance;
+        this._roomManager = this.resolveRoomManager();
+        if (!this._roomManager) {
+            console.warn('[MyRoomScene] 未找到 RoomDecorationManager，当前仅跳过房间装饰加载。');
+        }
         this._eventManager = EventManager.getInstance();
 
         // 注册事件监听
@@ -76,7 +80,12 @@ export class MyRoomScene extends Component {
      * 加载房间数据
      */
     private loadRoomData(): void {
-        if (!this._roomManager || !this.decorationContainer) return;
+        if (!this.decorationContainer) return;
+
+        this._roomManager = this._roomManager || this.resolveRoomManager();
+        if (!this._roomManager) return;
+
+        this.clearPlacedDecorationNodes();
 
         // 获取已放置的装饰品
         const placedDecorations = this._roomManager.getPlacedDecorations();
@@ -92,7 +101,7 @@ export class MyRoomScene extends Component {
      * 创建装饰品节点
      */
     private createDecorationNode(placed: PlacedDecoration): void {
-        if (!this.decorationContainer) return;
+        if (!this.decorationContainer || this._placedDecorationNodes.has(placed.id)) return;
 
         const config = this._roomManager?.getDecorationConfig(placed.decorationId);
         if (!config) return;
@@ -214,8 +223,7 @@ export class MyRoomScene extends Component {
      * 好友访问
      */
     onFriendVisit(): void {
-        // TODO: 显示好友访问信息
-        console.log('[MyRoomScene] 好友访问了我的房间');
+        console.log('[MyRoomScene] 收到好友访问事件，当前场景未配置访客提示 UI，保留日志记录。');
     }
 
     /**
@@ -224,9 +232,33 @@ export class MyRoomScene extends Component {
     private updateCoinDisplay(): void {
         if (!this.coinLabel) return;
 
-        const { DataManager } = require('../core/DataManager');
         const coins = DataManager.getInstance().getCoins();
         this.coinLabel.string = coins.toString();
+    }
+
+    private resolveRoomManager(): RoomDecorationManager | null {
+        if (RoomDecorationManager.instance) {
+            return RoomDecorationManager.instance;
+        }
+
+        const scene = director.getScene();
+        if (!scene) {
+            return null;
+        }
+
+        const managerNode = new Node('RoomDecorationManager');
+        scene.addChild(managerNode);
+        return managerNode.addComponent(RoomDecorationManager);
+    }
+
+    private clearPlacedDecorationNodes(): void {
+        for (const node of this._placedDecorationNodes.values()) {
+            if (node.isValid) {
+                node.destroy();
+            }
+        }
+        this._placedDecorationNodes.clear();
+        this.decorationContainer?.removeAllChildren();
     }
 
     /**

@@ -1,7 +1,8 @@
-import { _decorator, Component } from 'cc';
+import { _decorator } from 'cc';
 import { DataManager } from '../core/DataManager';
 import { EventManager } from '../core/EventManager';
 import { GAME_EVENTS } from '../../data/constants';
+import { RoomDecorationManager } from './RoomDecorationManager';
 
 const { ccclass } = _decorator;
 
@@ -40,8 +41,8 @@ export interface SeasonData {
  * 管理赛季进度和奖励
  */
 @ccclass('SeasonPass')
-export class SeasonPass extends Component {
-    private static _instance: SeasonPass;
+export class SeasonPass {
+    private static _instance: SeasonPass | null = null;
 
     static get instance(): SeasonPass {
         if (!this._instance) {
@@ -67,14 +68,10 @@ export class SeasonPass extends Component {
     private readonly SEASON_DURATION = 30 * 24 * 60 * 60 * 1000;
 
     private constructor() {
-        super();
         this.initLevelConfig();
         this.loadData();
     }
 
-    onLoad() {
-        this.loadData();
-    }
 
     // ==================== 初始化 ====================
 
@@ -304,9 +301,13 @@ export class SeasonPass extends Component {
         if (this._seasonData.isPremium && config.premiumReward) {
             dataManager.addCoins(config.premiumReward.coins);
 
-            // TODO: 发放道具/装饰物
             if (config.premiumReward.decoration) {
-                console.log(`[SeasonPass] 获得装饰物: ${config.premiumReward.decoration}`);
+                const roomManager = RoomDecorationManager.instance;
+                if (roomManager) {
+                    roomManager.unlockDecoration(config.premiumReward.decoration);
+                } else {
+                    console.warn(`[SeasonPass] 高级装饰奖励暂存，等待 RoomDecorationManager 就绪: ${config.premiumReward.decoration}`);
+                }
             }
         }
 

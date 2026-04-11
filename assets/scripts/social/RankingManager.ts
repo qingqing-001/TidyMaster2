@@ -1,4 +1,4 @@
-import { _decorator, Component, Node } from 'cc';
+import { _decorator, Node } from 'cc';
 import { isWx, postScore as wxPostScore, getUserInfo, UserInfo } from '../utils/WxUtil';
 const { ccclass, property } = _decorator;
 
@@ -18,8 +18,8 @@ export interface RankData {
  * 使用微信开放域实现好友排行榜
  */
 @ccclass('RankingManager')
-export class RankingManager extends Component {
-    private static _instance: RankingManager;
+export class RankingManager {
+    private static _instance: RankingManager | null = null;
     
     // 当前用户信息
     private _userInfo: UserInfo | null = null;
@@ -37,6 +37,10 @@ export class RankingManager extends Component {
     private readonly OPEN_DATA_CONTEXT_KEY = 'openDataContext';
     private readonly RANKING_GROUP_ID = 'ranking_group_1';
 
+    private static readonly FALLBACK_USER_ID_PREFIX = 'local_user_';
+    private static readonly FALLBACK_DISPLAY_NAME = '本地玩家';
+    private static readonly LOCAL_SCORE_STORAGE_KEY = 'tidy_master_local_rankings';
+
     static get instance(): RankingManager {
         if (!this._instance) {
             this._instance = new RankingManager();
@@ -45,7 +49,6 @@ export class RankingManager extends Component {
     }
 
     private constructor() {
-        super();
     }
 
     /**
@@ -104,15 +107,9 @@ export class RankingManager extends Component {
         console.log('[RankingManager] 上传分数:', key, value);
 
         if (!isWx()) {
-            // 非微信环境模拟
-            console.log('[RankingManager] 模拟上传分数:', key, value);
-            this._rankingData.push({
-                openId: 'mock_user_' + Date.now(),
-                nickname: this._userInfo?.nickName || '玩家',
-                avatarUrl: this._userInfo?.avatarUrl || '',
-                score: value,
-                rank: this._rankingData.length + 1
-            });
+            console.log('[RankingManager] 当前环境不支持开放域，分数将保存在本地排行榜缓存中');
+            this.saveLocalScore(key, value);
+            this._rankingData = this.buildLocalRankingSnapshot();
             return;
         }
 
@@ -140,6 +137,7 @@ export class RankingManager extends Component {
             if (value > currentHighScore) {
                 wx.setStorageSync(localKey, value);
             }
+            this.saveLocalScore(key, value);
             
         } catch (e) {
             console.error('[RankingManager] 上传分数失败:', e);
@@ -165,8 +163,7 @@ export class RankingManager extends Component {
         }
 
         if (!isWx()) {
-            // 非微信环境显示模拟数据
-            this.showMockRanking();
+            this.showLocalRanking();
             return;
         }
 
@@ -203,15 +200,12 @@ export class RankingManager extends Component {
                         groupId: this.RANKING_GROUP_ID
                     });
                     
-                    // 模拟收到数据（实际需要通过消息接收）
                     setTimeout(() => {
-                        // 这里应该通过开放域返回的数据来更新
-                        // 暂时使用本地模拟数据
-                        this._rankingData = this.getMockRankingData();
+                        this._rankingData = this.buildLocalRankingSnapshot();
                         resolve();
                     }, 500);
                 } else {
-                    this._rankingData = this.getMockRankingData();
+                    this._rankingData = this.buildLocalRankingSnapshot();
                     resolve();
                 }
             } catch (e) {
@@ -221,23 +215,83 @@ export class RankingManager extends Component {
     }
 
     /**
-     * 获取模拟排行榜数据
+     * 构建本地排行榜快照
      */
-    private getMockRankingData(): RankData[] {
-        return [
-            { openId: 'user1', nickname: '收纳小能手', avatarUrl: '', score: 50, rank: 1 },
-            { openId: 'user2', nickname: '整理达人', avatarUrl: '', score: 45, rank: 2 },
-            { openId: 'user3', nickname: '清洁大师', avatarUrl: '', score: 40, rank: 3 },
-            { openId: 'user4', nickname: '房间整理师', avatarUrl: '', score: 35, rank: 4 },
-            { openId: 'user5', nickname: '强迫症患者', avatarUrl: '', score: 30, rank: 5 },
-        ];
+    private buildLocalRankingSnapshot(): RankData[] {
+        const localScores = this.readLocalScores();
+        const entries = Object.entries(localScores)
+            .map(([scoreKey, score]) => ({ scoreKey, score }))
+            .filter((entry) => Number.isFinite(entry.score) && entry.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 20);
+
+        if (entries.length === 0) {
+            const myScore = this.getMyScore();
+            if (myScore > 0) {
+                entries.push({ scoreKey: 'level', score: myScore });
+            }
+        }
+
+        return entries.map((entry, index) => ({
+            openId: `${RankingManager.FALLBACK_USER_ID_PREFIX}${entry.scoreKey}`,
+            nickname: this.formatLocalRankingName(entry.scoreKey),
+            avatarUrl: this._userInfo?.avatarUrl || '',
+            score: entry.score,
+            rank: index + 1,
+        }));
+    }
+
+    private formatLocalRankingName(scoreKey: string): string {
+        const nickname = this._userInfo?.nickName || RankingManager.FALLBACK_DISPLAY_NAME;
+        return scoreKey === 'level' ? nickname : `${nickname}(${scoreKey})`;
+    }
+
+    private readLocalScores(): Record<string, number> {
+        try {
+            const raw = localStorage.getItem(RankingManager.LOCAL_SCORE_STORAGE_KEY);
+            if (!raw) {
+                return {};
+            }
+
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            const result: Record<string, number> = {};
+            for (const [key, value] of Object.entries(parsed)) {
+                if (typeof value === 'number' && Number.isFinite(value)) {
+                    result[key] = value;
+                }
+            }
+            return result;
+        } catch (e) {
+            console.warn('[RankingManager] 读取本地排行榜失败，将使用空榜单:', e);
+            return {};
+        }
+    }
+
+    private saveLocalScore(key: string, value: number): void {
+        if (value <= 0) {
+            return;
+        }
+
+        const scores = this.readLocalScores();
+        const current = scores[key] || 0;
+        if (value <= current) {
+            return;
+        }
+
+        scores[key] = value;
+
+        try {
+            localStorage.setItem(RankingManager.LOCAL_SCORE_STORAGE_KEY, JSON.stringify(scores));
+        } catch (e) {
+            console.warn('[RankingManager] 保存本地排行榜失败:', e);
+        }
     }
 
     /**
-     * 显示模拟排行榜
+     * 显示本地排行榜
      */
-    private showMockRanking(): void {
-        this._rankingData = this.getMockRankingData();
+    private showLocalRanking(): void {
+        this._rankingData = this.buildLocalRankingSnapshot();
         
         // 如果有UI节点，更新它
         if (this._rankingNode) {
@@ -379,7 +433,7 @@ export class RankingManager extends Component {
                 });
                 
                 // 返回模拟数据
-                return this.getMockRankingData();
+                return this.buildLocalRankingSnapshot();
             }
         } catch (e) {
             console.error('[RankingManager] 获取好友列表失败:', e);
@@ -393,7 +447,7 @@ export class RankingManager extends Component {
      */
     async getGroupRanking(groupId: string): Promise<RankData[]> {
         if (!isWx()) {
-            return this.getMockRankingData();
+            return this.buildLocalRankingSnapshot();
         }
 
         try {
@@ -407,7 +461,7 @@ export class RankingManager extends Component {
                     groupId: groupId
                 });
                 
-                return this.getMockRankingData();
+                return this.buildLocalRankingSnapshot();
             }
         } catch (e) {
             console.error('[RankingManager] 获取群排行榜失败:', e);
